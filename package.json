@@ -6,6 +6,9 @@
   "repository": "https://github.com/hjfitz/express-clone",
   "author": "Harry <hfitz83@gmail.com>",
   "license": "MIT",
+  "scripts": {
+    "build": "tsc"
+  },
   "devDependencies": {
     "@types/debug": "^0.0.30",
     "@types/node": "^9.6.1",

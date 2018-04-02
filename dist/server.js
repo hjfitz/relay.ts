@@ -16,8 +16,20 @@ var Server = /** @class */ (function () {
         else {
             this._server = http_1.default.createServer(this.listener);
         }
+        this.middleware = {
+            pure: [],
+            get: [],
+            post: [],
+            put: [],
+            patch: [],
+            delete: [],
+        };
     }
+    Server.prototype.parseRequest = function (req) { };
+    Server.prototype.parseResponse = function (req) { };
     Server.prototype.listener = function (req, res) {
+        // go through each middleware, check and fire off
+        // eventualy add a queue
         console.log('get');
     };
     Server.prototype.init = function (cb) {
@@ -25,6 +37,14 @@ var Server = /** @class */ (function () {
         if (cb)
             cb();
     };
+    Server.prototype.use = function (urlOrMiddleware, middleware) {
+    };
+    Server.prototype.get = function (url, middleware) {
+    };
+    Server.prototype.put = function (url, middleware) { };
+    Server.prototype.post = function (url, middleware) { };
+    Server.prototype.patch = function (url, middleware) { };
+    Server.prototype.delete = function (url, middleware) { };
     return Server;
 }());
 exports.default = Server;

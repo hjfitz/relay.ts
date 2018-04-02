@@ -16,7 +16,9 @@ exports.createServer = function (options) {
         throw new Error('Port missing in options!');
     }
     var useSSL = ('cert' in options) && ('key' in options);
+    d("Uses SSL: " + useSSL);
     var port = options.port, cert = options.cert, key = options.key;
+    d("port: " + port);
     if (useSSL)
         return new server_1.default(port, useSSL, cert, key);
     return new server_1.default(port);
