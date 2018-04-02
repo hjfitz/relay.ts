@@ -1,0 +1,20 @@
+{
+  "name": "express-clone",
+  "version": "1.0.0",
+  "description": "A basic Express-esque HTTP(S) server",
+  "main": "dist/index.js",
+  "repository": "https://github.com/hjfitz/express-clone",
+  "author": "Harry <hfitz83@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/debug": "^0.0.30",
+    "@types/node": "^9.6.1",
+    "tsc": "^1.20150623.0",
+    "tslint": "^5.9.1",
+    "tslint-config-airbnb": "^5.8.0",
+    "typescript": "^2.8.1"
+  },
+  "dependencies": {
+    "debug": "^3.1.0"
+  }
+}
