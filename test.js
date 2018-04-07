@@ -1,6 +1,10 @@
 const serv = require('./dist');
-console.log(serv);
+
 const server = serv.createServer({
   port: 8080
 });
-server.init();
+
+server
+  .get('/', (req, res) => res.send('hi'))
+  .init();
+// server.init();

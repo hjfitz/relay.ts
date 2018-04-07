@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var server_1 = __importDefault(require("./server"));
+var Server_1 = __importDefault(require("./Server"));
 var debug_1 = __importDefault(require("debug"));
 var d = debug_1.default('server:index');
 exports.createServer = function (options) {
@@ -20,6 +20,6 @@ exports.createServer = function (options) {
     var port = options.port, cert = options.cert, key = options.key;
     d("port: " + port);
     if (useSSL)
-        return new server_1.default(port, useSSL, cert, key);
-    return new server_1.default(port);
+        return new Server_1.default(port, useSSL, cert, key);
+    return new Server_1.default(port);
 };

@@ -58,11 +58,13 @@ export default class Server {
   }
 
   private listener(req: http.IncomingMessage, res: http.ServerResponse) {
+    d('connection to server made');
     // firstly, parse the request and response - make it a little more express-like
     const parsedRes = new Response(res);
     // go through each middleware, check and fire off
     // eventualy add a queue
     this.parseRequest(req).then(parsedReq => {
+      d('reqponse and request parsed');
       this.handleRequest(parsedReq, parsedRes)
     });
   }
@@ -91,29 +93,45 @@ export default class Server {
   /**
    * @param cb Callback function to run when server is running
    */
-  init(cb: Function) {
+  init(cb: Function): Server {
     this._server.listen(this.port);
     if (cb) cb();
+    return this;
   }
 
-  handleRequest(req: Request, res: Response) {
+  private handleRequest(req: Request, res: Response) {
+    const { method, url }: { method: string | undefined, url: string | undefined } = req;
+    d(`method: ${method}, url: ${url}`);
+    const middleware = this.middleware[method][url];
+    if (!middleware) {
+      res.send(`unable to ${method} ${url}!`);
+      return;
+    }
 
   }
 
-  use(urlOrMiddleware: string | Function, middleware: Function) {
+  use(urlOrMiddleware: string | Function, middleware: Function) {}
 
+  get(url: string, middleware: Function): Server {
+    d(`GET middleware for ${url} added`);
+    this.middleware.GET[url] = middleware;
+    return this;
   }
 
-  get(url: string, middleware: Function) {
-
+  put(url: string, middleware: Function): Server {
+    return this;
   }
 
-  put(url: string, middleware: Function) {}
+  post(url: string, middleware: Function): Server {
+    return this;
+  }
 
-  post(url: string, middleware: Function) {}
+  patch(url: string, middleware: Function): Server {
+    return this;
+  }
 
-  patch(url: string, middleware: Function) {}
-
-  delete(url: string, middleware: Function) {}
+  delete(url: string, middleware: Function): Server {
+    return this;
+  }
 
 }

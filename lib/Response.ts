@@ -12,33 +12,32 @@ export default class Response {
     this.httpResponse = resp;
   }
 
-  json(payload: object, encoding: string = 'utf8'): Promise<any> {
-    return new Promise((res, rej) => {
-      d('responding with JSON');
-      try {
-        const serialised: string = JSON.stringify(payload);
-        this.httpResponse.write(serialised, encoding, res)
-      } catch(err) {
-        rej(err);
-      }
-    });
-  }
-  
-  send(payload: string, encoding: string = 'utf8'): Promise<any> {
+  send(payload: string, encoding: string = 'utf8'): void {
     d('sending raw data');
-    return new Promise(res => this.httpResponse.write(payload, encoding, res));
+    this.httpResponse.write(payload, encoding, () => {
+      this.httpResponse.end();
+    });
   };
   
-  sendFile(filename: string, encoding: string = 'utf8'): Promise<any> {
-    return new Promise((res, rej) => {
-      d('sending file');
-      try {
-        const contents = fs.readFileSync(filename);
-        this.httpResponse.write(contents, encoding, res);
-      } catch(err) {
-        rej(err);
-      }
-    })
+  sendFile(filename: string, encoding: string = 'utf8'): void {
+    d('sending file');
+    try {
+      const contents: string = fs.readFileSync(filename).toString();
+      this.send(contents, encoding);
+    } catch(err) {
+      d(err);
+    }
+  }
+
+  json(payload: object): void {
+    d('responding with JSON');
+    try {
+      const serialised: string = JSON.stringify(payload);
+      this.send(serialised)
+    } catch(err) {
+      d(err);
+      throw err;
+    }
   }
   
   sendStatus() {}
