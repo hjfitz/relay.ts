@@ -1,5 +1,6 @@
 import http from 'http';
 import debug from 'debug';
+import qs from 'querystring';
 
 const d = debug('server:Request');
 
@@ -14,67 +15,75 @@ interface IRequest {
 }
 
 export default class Request {
-  attrs: IRequest;
-  constructor(options: IRequest) {
-    this.attrs = options;
+  url: string;
+  headers: http.IncomingHttpHeaders;
+  method: string;
+  code: number;
+  query: string;
+  pathname: string;
+  payload?: object | string;
+  _req: http.IncomingMessage;
+
+  constructor(options: IRequest, pure: http.IncomingMessage) {
+    this.url = options.url || 'unknown';
+    this.headers = options.headers;
+    this.method = options.method || 'unknown';
+    this.code = options.code || 500;
+    this.query = options.query || '';
+    this.pathname = options.pathname || '/';
+    this._req = pure;
+
+    d(`Request made to ${this.url}`);
   }
 
-  get url(): string | undefined {
-    return this.attrs.url;
-  }
-
-  get headers(): http.IncomingHttpHeaders {
-    return this.attrs.headers;
-  }
-
-  get method(): string | undefined {
-    return this.attrs.method;
-  }
-
-  get code(): number {
-    return this.attrs.code || 200; // we assume
-  }
-
-  get query(): string {
-    return this.attrs.query || '';
-  }
-
-  get pathname(): string | undefined {
-    return this.attrs.pathname;
-  }
-
-  get payload(): object {
-    return this.attrs.payload || {};
-  }
-
-  set payload(payload: object) {
-    this.attrs.payload = payload;
-  }
-
-  parseJSON(req: http.IncomingMessage): Promise<Request> {
+  parseIncoming(type?: string): Promise<Request> {
     return new Promise((res, rej) => {
       let body: string = '';
-      req.on('data', data => { body += data });
-      req.on('end', () => {
-        // attempt to parse JSON
-        try {
-          d('Attempting to parse');
-          d(body);
-          const parsed = JSON.parse(body);
-          this.attrs.payload = parsed;
-        } catch(err) {
-          d(err);
-          d('unable to parse body');
-        }
-        res(this);
+      this._req.on('data', data => { 
+        // limit data we allow
+        if (body.length > 1e6) this._req.connection.destroy();
+        body += data;
       });
-    })
+      this._req.on('end', () => {
+        switch (type) {
+          case 'application/json': {
+            try {
+              d('Attempting to parse to object');
+              d(body);
+              const parsed = JSON.parse(body);
+              this.payload = parsed;
+            } catch(err) {
+              d(err);
+              d('Unable to parse body');
+            }
+          break;
+        }
+        case 'multipart/form-data': {
+          // d(body);
+          d(qs.parse(body));
+          // do something
+        }
+
+        case 'application/x-www-form-urlencoded': {
+          d('parsing form x-www-formdata');
+          d(qs.parse(body));
+          const parsedForm = qs.parse(body);
+          d(typeof parsedForm);
+          this.payload = parsedForm;
+          break;
+        }
+
+        default: {
+          d('defaulting parse! keeping raw data');
+          this.payload = body || '';
+        }
+      }
+      d(`using data: ${JSON.stringify(this.payload)}`);
+      res(this);
+        });
+      });
 
   }
 
-  parseForm(req: http.IncomingMessage): Promise<any> {
-    return new Promise((req, res) => {
-      
-    })
-  }
+
 }

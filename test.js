@@ -6,5 +6,7 @@ const server = serv.createServer({
 
 server
   .get('/', (req, res) => res.send('hi'))
+  .get('/oioi', (req, res) => res.sendFile('../tsconfig.json'))
+  .post('/', (req, res) => res.send('oi'))
   .init();
 // server.init();

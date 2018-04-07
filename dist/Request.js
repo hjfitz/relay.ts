@@ -4,86 +4,65 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var debug_1 = __importDefault(require("debug"));
+var querystring_1 = __importDefault(require("querystring"));
 var d = debug_1.default('server:Request');
 var Request = /** @class */ (function () {
-    function Request(options) {
-        this.attrs = options;
+    function Request(options, pure) {
+        this.url = options.url || 'unknown';
+        this.headers = options.headers;
+        this.method = options.method || 'unknown';
+        this.code = options.code || 500;
+        this.query = options.query || '';
+        this.pathname = options.pathname || '/';
+        this._req = pure;
+        d("Request made to " + this.url);
     }
-    Object.defineProperty(Request.prototype, "url", {
-        get: function () {
-            return this.attrs.url;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Request.prototype, "headers", {
-        get: function () {
-            return this.attrs.headers;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Request.prototype, "method", {
-        get: function () {
-            return this.attrs.method;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Request.prototype, "code", {
-        get: function () {
-            return this.attrs.code || 200; // we assume
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Request.prototype, "query", {
-        get: function () {
-            return this.attrs.query || '';
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Request.prototype, "pathname", {
-        get: function () {
-            return this.attrs.pathname;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Request.prototype, "payload", {
-        get: function () {
-            return this.attrs.payload || {};
-        },
-        set: function (payload) {
-            this.attrs.payload = payload;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Request.prototype.parseJSON = function (req) {
+    Request.prototype.parseIncoming = function (type) {
         var _this = this;
         return new Promise(function (res, rej) {
             var body = '';
-            req.on('data', function (data) { body += data; });
-            req.on('end', function () {
-                // attempt to parse JSON
-                try {
-                    d('Attempting to parse');
-                    d(body);
-                    var parsed = JSON.parse(body);
-                    _this.attrs.payload = parsed;
+            _this._req.on('data', function (data) {
+                // limit data we allow
+                if (body.length > 1e6)
+                    _this._req.connection.destroy();
+                body += data;
+            });
+            _this._req.on('end', function () {
+                switch (type) {
+                    case 'application/json': {
+                        try {
+                            d('Attempting to parse to object');
+                            d(body);
+                            var parsed = JSON.parse(body);
+                            _this.payload = parsed;
+                        }
+                        catch (err) {
+                            d(err);
+                            d('Unable to parse body');
+                        }
+                        break;
+                    }
+                    case 'multipart/form-data': {
+                        // d(body);
+                        d(querystring_1.default.parse(body));
+                        // do something
+                    }
+                    case 'application/x-www-form-urlencoded': {
+                        d('parsing form x-www-formdata');
+                        d(querystring_1.default.parse(body));
+                        var parsedForm = querystring_1.default.parse(body);
+                        d(typeof parsedForm);
+                        _this.payload = parsedForm;
+                        break;
+                    }
+                    default: {
+                        d('defaulting parse! keeping raw data');
+                        _this.payload = body || '';
+                    }
                 }
-                catch (err) {
-                    d(err);
-                    d('unable to parse body');
-                }
+                d("using data: " + JSON.stringify(_this.payload));
                 res(_this);
             });
-        });
-    };
-    Request.prototype.parseForm = function (req) {
-        return new Promise(function (req, res) {
         });
     };
     return Request;

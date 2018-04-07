@@ -36,7 +36,7 @@ var Server = /** @class */ (function () {
         // go through each middleware, check and fire off
         // eventualy add a queue
         this.parseRequest(req).then(function (parsedReq) {
-            d('reqponse and request parsed');
+            d('Response and request parsed');
             _this.handleRequest(parsedReq, parsedRes);
         });
     };
@@ -46,14 +46,14 @@ var Server = /** @class */ (function () {
             req.on('close', function () { return console.log('//todo'); }); // to remove from queue
             var url = req.url, headers = req.headers, method = req.method, code = req.statusCode;
             var _a = url_1.parse(url || ''), query = _a.query, pathname = _a.pathname;
-            var parsedRequest = new Request_1.default({ url: url, headers: headers, method: method, code: code, query: query, pathname: pathname });
-            // TODO parse this more elegantly
-            if (headers['content-type'] === 'application/json') {
-                parsedRequest.parseJSON(req).then(res);
-            }
-            else {
+            var parsedRequest = new Request_1.default({ url: url, headers: headers, method: method, code: code, query: query, pathname: pathname }, req);
+            var contentType = headers['content-type'];
+            d("content type: " + contentType);
+            if (!('content-type' in headers)) {
                 res(parsedRequest);
+                return;
             }
+            parsedRequest.parseIncoming(contentType).then(res);
         });
     };
     /**
@@ -68,28 +68,54 @@ var Server = /** @class */ (function () {
     Server.prototype.handleRequest = function (req, res) {
         var method = req.method, url = req.url;
         d("method: " + method + ", url: " + url);
-        var middleware = this.middleware[method][url];
-        if (!middleware) {
-            res.send("unable to " + method + " " + url + "!");
+        if (!method || !url) {
+            res.send('no method!');
             return;
         }
+        var middleware = this.middleware[method][url];
+        if (!middleware) {
+            res.send("unable to " + method + " on " + url + "!");
+            return;
+        }
+        middleware(req, res);
     };
-    Server.prototype.use = function (urlOrMiddleware, middleware) { };
+    Server.prototype.static = function (path) {
+        return this;
+    };
+    Server.prototype.use = function (urlOrMiddleware, middleware) {
+        d('pure middleware added');
+        // todo: figure out an efficient way to parse this
+        // if (typeof urlOrMiddleware === 'string') {
+        //   this.middleware.push({
+        //     url: urlOrMiddleware,
+        //     middleware,
+        //   })
+        // }
+        return this;
+    };
     Server.prototype.get = function (url, middleware) {
         d("GET middleware for " + url + " added");
         this.middleware.GET[url] = middleware;
         return this;
     };
     Server.prototype.put = function (url, middleware) {
+        d("PUT middleware for " + url + " added");
+        this.middleware.PUT[url] = middleware;
         return this;
     };
     Server.prototype.post = function (url, middleware) {
+        d("POST middleware for " + url + " added");
+        this.middleware.POST[url] = middleware;
         return this;
     };
     Server.prototype.patch = function (url, middleware) {
+        d("PATCH middleware for " + url + " added");
+        this.middleware.PATCH[url] = middleware;
         return this;
     };
     Server.prototype.delete = function (url, middleware) {
+        d("DELETE middleware for " + url + " added");
+        this.middleware.DELETE[url] = middleware;
         return this;
     };
     return Server;

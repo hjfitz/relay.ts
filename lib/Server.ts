@@ -11,18 +11,18 @@ import Response from './Response';
 const d = debug('server:Server');
 
 interface VerbMiddleware {
-  [key: string]: Function,
+  [key: string]: FunctionConstructor,
 }
 
 
 
 interface ServerMiddleware {
-  pure: Function[],
-  GET: VerbMiddleware[] | Object,
-  POST: VerbMiddleware[] | Object,
-  PUT: VerbMiddleware[] | Object,
-  PATCH: VerbMiddleware[] | Object,
-  DELETE: VerbMiddleware[] | Object
+  [key: string]: Function | Object,
+  GET: VerbMiddleware | Object,
+  POST: VerbMiddleware | Object,
+  PUT: VerbMiddleware | Object,
+  PATCH: VerbMiddleware | Object,
+  DELETE: VerbMiddleware | Object
 }
 
 interface ServerResponse {
@@ -64,7 +64,7 @@ export default class Server {
     // go through each middleware, check and fire off
     // eventualy add a queue
     this.parseRequest(req).then(parsedReq => {
-      d('reqponse and request parsed');
+      d('Response and request parsed');
       this.handleRequest(parsedReq, parsedRes)
     });
   }
@@ -78,14 +78,14 @@ export default class Server {
       const { url, headers, method, statusCode: code } = req;
       const { query, pathname } = parse(url || '');
       
-      const parsedRequest = new Request({ url, headers, method, code, query, pathname});
-
-      // TODO parse this more elegantly
-      if (headers['content-type'] === 'application/json') {
-        parsedRequest.parseJSON(req).then(res);
-      } else {
+      const parsedRequest = new Request({ url, headers, method, code, query, pathname}, req);
+      const contentType = headers['content-type'];
+      d(`content type: ${contentType}`);
+      if (!('content-type' in headers)) {
         res(parsedRequest);
+        return;
       }
+      parsedRequest.parseIncoming(contentType).then(res);
     });
   }
 
@@ -99,18 +99,37 @@ export default class Server {
     return this;
   }
 
-  private handleRequest(req: Request, res: Response) {
+  private handleRequest(req: Request, res: Response): void {
     const { method, url }: { method: string | undefined, url: string | undefined } = req;
     d(`method: ${method}, url: ${url}`);
-    const middleware = this.middleware[method][url];
+    if (!method || !url) {
+      res.send('no method!');
+      return;
+    }
+    const middleware: Function = this.middleware[method][url];
     if (!middleware) {
-      res.send(`unable to ${method} ${url}!`);
+      res.send(`unable to ${method} on ${url}!`);
       return;
     }
 
+    middleware(req, res);
   }
 
-  use(urlOrMiddleware: string | Function, middleware: Function) {}
+  static(path: string): Server {
+    return this;
+  }
+
+  use(urlOrMiddleware: string | Function, middleware: Function): Server {
+    d('pure middleware added');
+    // todo: figure out an efficient way to parse this
+    // if (typeof urlOrMiddleware === 'string') {
+    //   this.middleware.push({
+    //     url: urlOrMiddleware,
+    //     middleware,
+    //   })
+    // }
+    return this;
+  }
 
   get(url: string, middleware: Function): Server {
     d(`GET middleware for ${url} added`);
@@ -119,19 +138,27 @@ export default class Server {
   }
 
   put(url: string, middleware: Function): Server {
-    return this;
+    d(`PUT middleware for ${url} added`);
+    this.middleware.PUT[url] = middleware;
+    return this;  
   }
 
   post(url: string, middleware: Function): Server {
-    return this;
+    d(`POST middleware for ${url} added`);
+    this.middleware.POST[url] = middleware;
+    return this; 
   }
 
   patch(url: string, middleware: Function): Server {
-    return this;
-  }
+    d(`PATCH middleware for ${url} added`);
+    this.middleware.PATCH[url] = middleware;
+    return this; 
+   }
 
   delete(url: string, middleware: Function): Server {
-    return this;
+    d(`DELETE middleware for ${url} added`);
+    this.middleware.DELETE[url] = middleware;
+    return this; 
   }
 
 }
