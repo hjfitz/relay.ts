@@ -5,20 +5,16 @@ import queryString from 'querystring';
 import debug from 'debug';
 import fs from 'fs';
 
+import Request from './Request';
+import Response from './Response';
+
 const d = debug('server:Server');
 
 interface VerbMiddleware {
   [key: string]: Function,
 }
 
-interface ServerRequest {
-  headers: http.IncomingHttpHeaders,
-  method?: string,
-  code: number | undefined,
-  query: string | null,
-  pathname?: string, 
-  payload?: object
-}
+
 
 interface ServerMiddleware {
   pure: Function[],
@@ -63,16 +59,16 @@ export default class Server {
 
   private listener(req: http.IncomingMessage, res: http.ServerResponse) {
     // firstly, parse the request and response - make it a little more express-like
-    const parsedReq = this.parseRequest(req);
-    const parsedRes = this.parseResponse(res);
+    const parsedRes = new Response(res);
     // go through each middleware, check and fire off
     // eventualy add a queue
-    parsedReq.then(console.log);
-      // this.handleRequest(parsedReq, parsedRes);
+    this.parseRequest(req).then(parsedReq => {
+      this.handleRequest(parsedReq, parsedRes)
+    });
   }
 
-  private parseRequest(req: http.IncomingMessage): Promise<ServerRequest> {
-    return new Promise((resolve, reject) => {
+  private parseRequest(req: http.IncomingMessage): Promise<Request> {
+    return new Promise((res, rej) => {
 
       // need to parse to METHOD & path at minimum
       req.on('close', () => console.log('//todo')); // to remove from queue
@@ -80,67 +76,17 @@ export default class Server {
       const { url, headers, method, statusCode: code } = req;
       const { query, pathname } = parse(url || '');
       
-      const parsedRequest: ServerRequest = { headers, method, code, query, pathname };
-      
-      // attempt to parse basic JSON
+      const parsedRequest = new Request({ url, headers, method, code, query, pathname});
+
+      // TODO parse this more elegantly
       if (headers['content-type'] === 'application/json') {
-        let body: string = '';
-        req.on('data', data => { body += data });
-        req.on('end', () => {
-          // attempt to parse JSON
-          try {
-            d('Attempting to parse');
-            d(body);
-            const parsed = JSON.parse(body);
-            parsedRequest.payload = parsed;
-          } catch(err) {
-            d(err);
-            d('unable to parse body');
-          }
-          resolve(parsedRequest)
-        });
+        parsedRequest.parseJSON(req).then(res);
       } else {
-        resolve(parsedRequest);
+        res(parsedRequest);
       }
     });
   }
 
-  private parseResponse(resp: http.ServerResponse): ServerResponse {
-    // need to add methods like JSON, send, sendState, sendFile, end
-
-    const json = (payload: object, encoding: string = 'utf8') => new Promise((res, rej) => {
-      d('responding with JSON');
-      try {
-        const serialised: string = JSON.stringify(payload);
-        resp.write(serialised, encoding, res)
-      } catch(err) {
-        rej(err);
-      }
-    });
-
-    const send = (payload: string, encoding: string = 'utf8') => {
-      d('sending raw data');
-      return new Promise(res => resp.write(payload, encoding, res));
-    };
-
-    const sendFile = (filename: string, encoding: string = 'utf8') => new Promise((res, rej) => {
-      d('sending file');
-      try {
-        const contents = fs.readFileSync(filename);
-        resp.write(contents, encoding, res);
-      } catch(err) {
-        rej(err);
-      }
-    })
-
-    return {
-      json,
-      send,
-      sendFile,
-      sendStatus: () => {},
-      end: () => resp.destroy(new Error('Server closed the connection')),
-    };
-  }
 
   /**
    * @param cb Callback function to run when server is running
@@ -150,7 +96,7 @@ export default class Server {
     if (cb) cb();
   }
 
-  handleRequest(req: ServerRequest, res: ServerResponse) {
+  handleRequest(req: Request, res: Response) {
 
   }
 

@@ -1,4 +1,4 @@
-import Server from './server';
+import Server from './Server';
 import debug from 'debug';
 
 const d = debug('server:index');
