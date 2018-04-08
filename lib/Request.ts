@@ -15,6 +15,7 @@ interface IRequest {
 }
 
 export default class Request {
+  private _req: http.IncomingMessage;
   url: string;
   headers: http.IncomingHttpHeaders;
   method: string;
@@ -22,7 +23,6 @@ export default class Request {
   query: string;
   pathname: string;
   payload?: object | string;
-  _req: http.IncomingMessage;
 
   constructor(options: IRequest, pure: http.IncomingMessage) {
     this.url = options.url || 'unknown';
@@ -36,54 +36,52 @@ export default class Request {
     d(`Request made to ${this.url}`);
   }
 
-  parseIncoming(type?: string): Promise<Request> {
+  handleIncomingStream(type?: string): Promise<Request> {
     return new Promise((res, rej) => {
       let body: string = '';
       this._req.on('data', data => { 
-        // limit data we allow
         if (body.length > 1e6) this._req.connection.destroy();
         body += data;
       });
       this._req.on('end', () => {
-        switch (type) {
-          case 'application/json': {
-            try {
-              d('Attempting to parse to object');
-              d(body);
-              const parsed = JSON.parse(body);
-              this.payload = parsed;
-            } catch(err) {
-              d(err);
-              d('Unable to parse body');
-            }
-          break;
-        }
-        case 'multipart/form-data': {
-          // d(body);
-          d(qs.parse(body));
-          // do something
-        }
-
-        case 'application/x-www-form-urlencoded': {
-          d('parsing form x-www-formdata');
-          d(qs.parse(body));
-          const parsedForm = qs.parse(body);
-          d(typeof parsedForm);
-          this.payload = parsedForm;
-          break;
-        }
-
-        default: {
-          d('defaulting parse! keeping raw data');
-          this.payload = body || '';
-        }
-      }
-      d(`using data: ${JSON.stringify(this.payload)}`);
-      res(this);
-        });
+        this.parseData(body, type);
+        res(this);
       });
-
+    });
   }
 
-
+  private parseData(body: string, type?: string): void {
+    if (!type) return;
+    if (type === 'application/json') {
+      try {
+        d('parsing application/json');
+        d(body);
+        const parsed = JSON.parse(body);
+        d('parse successful');
+        this.payload = parsed;
+      } catch(err) {
+        d(err);
+        d('Unable to parse body');
+      }
+    } else if (type.includes('boundary') || body.includes('boundary')) {
+      d('parsing form with boundary');
+      const rip = type.split('=');
+      console.log(rip);
+      // const [,boundary] = ${bound.split('=')}`;
+      // const keyVal = body.split(boundary.trim());
+      // console.log('bound:',boundary)
+      // console.log(body);
+      // console.log(keyVal);
+    } else if (type === 'application/x-www-form-urlencoded') {
+      d('parsing form x-www-formdata');
+      d(qs.parse(body));
+      const parsedForm = qs.parse(body);
+      d(typeof parsedForm);
+      this.payload = parsedForm;
+    } else {
+      d('unknown header!', type);
+      d('defaulting parse! keeping raw data');
+      this.payload = body || '';
+    }
+  }
 }

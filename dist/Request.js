@@ -17,53 +17,59 @@ var Request = /** @class */ (function () {
         this._req = pure;
         d("Request made to " + this.url);
     }
-    Request.prototype.parseIncoming = function (type) {
+    Request.prototype.handleIncomingStream = function (type) {
         var _this = this;
         return new Promise(function (res, rej) {
             var body = '';
             _this._req.on('data', function (data) {
-                // limit data we allow
                 if (body.length > 1e6)
                     _this._req.connection.destroy();
                 body += data;
             });
             _this._req.on('end', function () {
-                switch (type) {
-                    case 'application/json': {
-                        try {
-                            d('Attempting to parse to object');
-                            d(body);
-                            var parsed = JSON.parse(body);
-                            _this.payload = parsed;
-                        }
-                        catch (err) {
-                            d(err);
-                            d('Unable to parse body');
-                        }
-                        break;
-                    }
-                    case 'multipart/form-data': {
-                        // d(body);
-                        d(querystring_1.default.parse(body));
-                        // do something
-                    }
-                    case 'application/x-www-form-urlencoded': {
-                        d('parsing form x-www-formdata');
-                        d(querystring_1.default.parse(body));
-                        var parsedForm = querystring_1.default.parse(body);
-                        d(typeof parsedForm);
-                        _this.payload = parsedForm;
-                        break;
-                    }
-                    default: {
-                        d('defaulting parse! keeping raw data');
-                        _this.payload = body || '';
-                    }
-                }
-                d("using data: " + JSON.stringify(_this.payload));
+                _this.parseData(body, type);
                 res(_this);
             });
         });
+    };
+    Request.prototype.parseData = function (body, type) {
+        if (!type)
+            return;
+        if (type === 'application/json') {
+            try {
+                d('parsing application/json');
+                d(body);
+                var parsed = JSON.parse(body);
+                d('parse successful');
+                this.payload = parsed;
+            }
+            catch (err) {
+                d(err);
+                d('Unable to parse body');
+            }
+        }
+        else if (type.includes('boundary') || body.includes('boundary')) {
+            d('parsing form with boundary');
+            var rip = type.split('=');
+            console.log(rip);
+            // const [,boundary] = ${bound.split('=')}`;
+            // const keyVal = body.split(boundary.trim());
+            // console.log('bound:',boundary)
+            // console.log(body);
+            // console.log(keyVal);
+        }
+        else if (type === 'application/x-www-form-urlencoded') {
+            d('parsing form x-www-formdata');
+            d(querystring_1.default.parse(body));
+            var parsedForm = querystring_1.default.parse(body);
+            d(typeof parsedForm);
+            this.payload = parsedForm;
+        }
+        else {
+            d('unknown header!', type);
+            d('defaulting parse! keeping raw data');
+            this.payload = body || '';
+        }
     };
     return Request;
 }());

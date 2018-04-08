@@ -36,7 +36,7 @@ interface ServerResponse {
 export default class Server {
 
   private _server: https.Server | http.Server;
-  middleware: ServerMiddleware;
+  private middleware: ServerMiddleware;
   port: number;
 
   constructor(port: number, useSSL: boolean = false, cert?: string, key?: string) {
@@ -77,7 +77,6 @@ export default class Server {
       
       const { url, headers, method, statusCode: code } = req;
       const { query, pathname } = parse(url || '');
-      
       const parsedRequest = new Request({ url, headers, method, code, query, pathname}, req);
       const contentType = headers['content-type'];
       d(`content type: ${contentType}`);
@@ -85,7 +84,8 @@ export default class Server {
         res(parsedRequest);
         return;
       }
-      parsedRequest.parseIncoming(contentType).then(res);
+      // handleIncomingStream returns itself - resolve after handling
+      parsedRequest.handleIncomingStream(contentType).then(res);
     });
   }
 

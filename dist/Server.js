@@ -53,7 +53,8 @@ var Server = /** @class */ (function () {
                 res(parsedRequest);
                 return;
             }
-            parsedRequest.parseIncoming(contentType).then(res);
+            // handleIncomingStream returns itself - resolve after handling
+            parsedRequest.handleIncomingStream(contentType).then(res);
         });
     };
     /**
