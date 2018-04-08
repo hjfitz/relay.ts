@@ -34,6 +34,7 @@ var Response = /** @class */ (function () {
         d('responding with JSON');
         try {
             var serialised = JSON.stringify(payload);
+            this.httpResponse.setHeader('content-type', 'application/json');
             this.send(serialised);
         }
         catch (err) {

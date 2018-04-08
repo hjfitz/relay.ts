@@ -33,7 +33,8 @@ export default class Response {
     d('responding with JSON');
     try {
       const serialised: string = JSON.stringify(payload);
-      this.send(serialised)
+      this.httpResponse.setHeader('content-type', 'application/json');
+      this.send(serialised);
     } catch(err) {
       d(err);
       throw err;
