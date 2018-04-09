@@ -1,6 +1,8 @@
 import http from 'http';
 import debug from 'debug';
 import qs from 'querystring';
+import { clone } from 'lodash/lang';
+
 
 const d = debug('server:Request');
 
@@ -63,15 +65,30 @@ export default class Request {
         d(err);
         d('Unable to parse body');
       }
-    } else if (type.includes('boundary') || body.includes('boundary')) {
+    } else if (type.includes('boundary') || body.includes('Boundary')) {
       d('parsing form with boundary');
-      const rip = type.split('=');
-      console.log(rip);
-      // const [,boundary] = ${bound.split('=')}`;
-      // const keyVal = body.split(boundary.trim());
-      // console.log('bound:',boundary)
-      // console.log(body);
-      // console.log(keyVal);
+      const [,delim]: string[] = type.split('=');
+      const splitBody: string[] = body.split('\n').map(line => line.replace(/\r/g, ''));
+      const keySplit: Array<string[]> = [];
+      const cur: string[] = [];
+
+      for (let i: number = 0; i < splitBody.length; i += 1) {
+        const line: string = splitBody[i];
+        if (line.includes(delim)) {
+          if (cur.length) keySplit.push(clone(cur));
+          cur.length = 0;
+        } else {
+          if (line.length) cur.push(line);
+        }
+      }
+
+      this.payload = keySplit.map(pair => {
+        const [unparsedKey, ...rest]: string[] = pair;
+        const key: string = unparsedKey.replace('Content-Disposition: form-data; name=', '').replace(/"/g, '');
+        const joined: any = rest.join();
+        return { [key]: rest.join() };
+      }).reduce((acc, cur) => Object.assign(acc, cur), {});
+
     } else if (type === 'application/x-www-form-urlencoded') {
       d('parsing form x-www-formdata');
       d(qs.parse(body));

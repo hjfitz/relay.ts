@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var debug_1 = __importDefault(require("debug"));
 var querystring_1 = __importDefault(require("querystring"));
+var lang_1 = require("lodash/lang");
 var d = debug_1.default('server:Request');
 var Request = /** @class */ (function () {
     function Request(options, pure) {
@@ -48,15 +49,31 @@ var Request = /** @class */ (function () {
                 d('Unable to parse body');
             }
         }
-        else if (type.includes('boundary') || body.includes('boundary')) {
+        else if (type.includes('boundary') || body.includes('Boundary')) {
             d('parsing form with boundary');
-            var rip = type.split('=');
-            console.log(rip);
-            // const [,boundary] = ${bound.split('=')}`;
-            // const keyVal = body.split(boundary.trim());
-            // console.log('bound:',boundary)
-            // console.log(body);
-            // console.log(keyVal);
+            var _a = type.split('='), delim = _a[1];
+            var splitBody = body.split('\n').map(function (line) { return line.replace(/\r/g, ''); });
+            var keySplit = [];
+            var cur = [];
+            for (var i = 0; i < splitBody.length; i += 1) {
+                var line = splitBody[i];
+                if (line.includes(delim)) {
+                    if (cur.length)
+                        keySplit.push(lang_1.clone(cur));
+                    cur.length = 0;
+                }
+                else {
+                    if (line.length)
+                        cur.push(line);
+                }
+            }
+            this.payload = keySplit.map(function (pair) {
+                var unparsedKey = pair[0], rest = pair.slice(1);
+                var key = unparsedKey.replace('Content-Disposition: form-data; name=', '').replace(/"/g, '');
+                var joined = rest.join();
+                return _a = {}, _a[key] = rest.join(), _a;
+                var _a;
+            }).reduce(function (acc, cur) { return Object.assign(acc, cur); }, {});
         }
         else if (type === 'application/x-www-form-urlencoded') {
             d('parsing form x-www-formdata');
