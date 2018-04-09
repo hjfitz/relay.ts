@@ -1,6 +1,9 @@
+/// <reference types="node" />
+import http from 'http';
+import https from 'https';
 export default class Server {
-    private _server;
-    private middleware;
+    _server: https.Server | http.Server;
+    ServerMiddleware: any;
     port: number;
     constructor(port: number, useSSL?: boolean, cert?: string, key?: string);
     private listener(req, res);

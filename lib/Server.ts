@@ -35,8 +35,8 @@ interface ServerResponse {
 
 export default class Server {
 
-  private _server: https.Server | http.Server;
-  private middleware: ServerMiddleware;
+  _server: https.Server | http.Server;
+  middleware: ServerMiddleware;
   port: number;
 
   constructor(port: number, useSSL: boolean = false, cert?: string, key?: string) {
@@ -57,7 +57,7 @@ export default class Server {
     };
   }
 
-  private listener(req: http.IncomingMessage, res: http.ServerResponse) {
+  listener(req: http.IncomingMessage, res: http.ServerResponse) {
     d('connection to server made');
     // firstly, parse the request and response - make it a little more express-like
     const parsedRes = new Response(res);
@@ -69,7 +69,7 @@ export default class Server {
     });
   }
 
-  private parseRequest(req: http.IncomingMessage): Promise<Request> {
+  parseRequest(req: http.IncomingMessage): Promise<Request> {
     return new Promise((res, rej) => {
 
       // need to parse to METHOD & path at minimum
@@ -99,7 +99,7 @@ export default class Server {
     return this;
   }
 
-  private handleRequest(req: Request, res: Response): void {
+  handleRequest(req: Request, res: Response): void {
     const { method, url }: { method: string | undefined, url: string | undefined } = req;
     d(`method: ${method}, url: ${url}`);
     if (!method || !url) {

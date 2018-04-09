@@ -17,7 +17,7 @@ interface IRequest {
 }
 
 export default class Request {
-  private _req: http.IncomingMessage;
+  _req: http.IncomingMessage;
   url: string;
   headers: http.IncomingHttpHeaders;
   method: string;
@@ -52,9 +52,11 @@ export default class Request {
     });
   }
 
-  private parseData(body: string, type?: string): void {
+  parseData(body: string, type?: string): void {
     if (!type) return;
-    if (type === 'application/json') {
+    if (type === 'text/plain') {
+      this.payload = body;
+    } else if (type === 'application/json') {
       try {
         d('parsing application/json');
         d(body);

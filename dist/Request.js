@@ -36,7 +36,10 @@ var Request = /** @class */ (function () {
     Request.prototype.parseData = function (body, type) {
         if (!type)
             return;
-        if (type === 'application/json') {
+        if (type === 'text/plain') {
+            this.payload = body;
+        }
+        else if (type === 'application/json') {
             try {
                 d('parsing application/json');
                 d(body);

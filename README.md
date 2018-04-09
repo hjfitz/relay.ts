@@ -4,8 +4,9 @@
 Plugins:
 - Static files
 - Compression (gzip + ???)
-- Body parsing (by default)
+- ~~Body parsing (by default)~~
   - JSON (x)
   - forms (partially)
 - cookie parsing - { credentials: 'include' }
 - sessions
+- next()

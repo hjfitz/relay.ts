@@ -6,7 +6,7 @@ const d = debug('server:Response');
 
 export default class Response {
 
-  private _res: http.ServerResponse;
+  _res: http.ServerResponse;
 
   constructor(resp: http.ServerResponse) {
     this._res = resp;

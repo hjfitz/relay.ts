@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import http from 'http';
 export default class Response {
-    private _res;
+    _res: http.ServerResponse;
     constructor(resp: http.ServerResponse);
     /**
      * Send some data, and once it's flushed - end the connection
