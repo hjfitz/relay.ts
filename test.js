@@ -9,12 +9,13 @@ const server = serv.createServer({
     'session',
     'logger',
   ],
-  static: [{ dir: '/public', on: '/' }]
+  static: [{ dir: '/lib', on: '/mounted' }]
 });
 
 server
-  .get('/', (req, res) => res.send('hi'))
-  .get('/oioi', (req, res) => res.sendFile('../tsconfig.json'))
+  .get('/', (req, res, next) => next())
+  .get('/json', (req, res) => res.json({ a:1 }))
+  .get('/file', (req, res) => res.sendFile('./package.json'))
   .post('/', (req, res) => res.send('oi'))
   .init();
 

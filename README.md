@@ -3,10 +3,10 @@
 
 Plugins:
 - Static files
+- next()
 - Compression (gzip + ???)
 - ~~Body parsing (by default)~~
   - JSON (x)
   - forms (partially)
 - cookie parsing - { credentials: 'include' }
 - sessions
-- next()

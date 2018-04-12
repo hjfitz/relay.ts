@@ -6,7 +6,7 @@ import { clone } from 'lodash/lang';
 
 const d = debug('server:Request');
 
-interface IRequest {
+export interface IRequest {
   url: string | undefined,
   headers: http.IncomingHttpHeaders,
   method?: string,

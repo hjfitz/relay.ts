@@ -14,7 +14,10 @@ interface VerbMiddleware {
   [key: string]: FunctionConstructor,
 }
 
-
+interface Middleware {
+  func: Function,
+  next: Function,
+}
 
 interface ServerMiddleware {
   [key: string]: Function | Object,
@@ -94,9 +97,25 @@ export default class Server {
    * @param cb Callback function to run when server is running
    */
   init(cb: Function): Server {
+    this.prepareMiddleware();
     this._server.listen(this.port);
     if (cb) cb();
     return this;
+  }
+
+  prepareMiddleware(): void {
+    ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].forEach(verb => {
+      const middlewares = Object.keys(this.middleware[verb]);
+      for (let i = 0; i < middlewares.length; i += 1) {
+        const func = this.middleware[verb][middlewares[i]];
+        const next = this.middleware[verb][middlewares[i + 1]];
+        this.middleware[verb][middlewares[i]] = { func, next };
+        if (!next) { 
+          const noop = () => {};
+          this.middleware[verb][middlewares[i]] = { func, noop };
+        } 
+      }
+    });
   }
 
   handleRequest(req: Request, res: Response): void {
@@ -106,20 +125,29 @@ export default class Server {
       res.send('no method!');
       return;
     }
-    const middleware: Function = this.middleware[method][url];
+    const middleware: Middleware = this.middleware[method][url];
+
+    // nothing? let the user know, don't hang
     if (!middleware) {
       res.send(`unable to ${method} on ${url}!`);
       return;
     }
 
-    middleware(req, res);
+    // prepare next, if so desired
+    const next = () => middleware.next(req, res);
+
+    middleware.func(req, res, next);
   }
 
   static(path: string): Server {
     return this;
   }
 
-  use(urlOrMiddleware: string | Function, middleware: Function): Server {
+  enable(plugin: string): void {
+
+  }
+
+  use(urlOrMiddleware: string | Function, middleware?: Function): Server {
     d('pure middleware added');
     // todo: figure out an efficient way to parse this
     // if (typeof urlOrMiddleware === 'string') {

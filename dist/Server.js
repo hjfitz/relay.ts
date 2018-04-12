@@ -61,10 +61,26 @@ var Server = /** @class */ (function () {
      * @param cb Callback function to run when server is running
      */
     Server.prototype.init = function (cb) {
+        this.prepareMiddleware();
         this._server.listen(this.port);
         if (cb)
             cb();
         return this;
+    };
+    Server.prototype.prepareMiddleware = function () {
+        var _this = this;
+        ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].forEach(function (verb) {
+            var middlewares = Object.keys(_this.middleware[verb]);
+            for (var i = 0; i < middlewares.length; i += 1) {
+                var func = _this.middleware[verb][middlewares[i]];
+                var next = _this.middleware[verb][middlewares[i + 1]];
+                _this.middleware[verb][middlewares[i]] = { func: func, next: next };
+                if (!next) {
+                    var noop = function () { };
+                    _this.middleware[verb][middlewares[i]] = { func: func, noop: noop };
+                }
+            }
+        });
     };
     Server.prototype.handleRequest = function (req, res) {
         var method = req.method, url = req.url;
@@ -74,14 +90,19 @@ var Server = /** @class */ (function () {
             return;
         }
         var middleware = this.middleware[method][url];
+        // nothing? let the user know, don't hang
         if (!middleware) {
             res.send("unable to " + method + " on " + url + "!");
             return;
         }
-        middleware(req, res);
+        // prepare next, if so desired
+        var next = function () { return middleware.next(req, res); };
+        middleware.func(req, res, next);
     };
     Server.prototype.static = function (path) {
         return this;
+    };
+    Server.prototype.enable = function (plugin) {
     };
     Server.prototype.use = function (urlOrMiddleware, middleware) {
         d('pure middleware added');
