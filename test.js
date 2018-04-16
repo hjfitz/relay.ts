@@ -13,6 +13,10 @@ const server = serv.createServer({
 });
 
 server
+  .use((req, res, next) => {
+    console.log(req.method);
+    next();
+  })
   .get('/', (req, res, next) => next())
   .get('/json', (req, res) => res.json({ a:1 }))
   .get('/file', (req, res) => res.sendFile('./package.json'))

@@ -9,6 +9,7 @@ var url_1 = require("url");
 var debug_1 = __importDefault(require("debug"));
 var Request_1 = __importDefault(require("./Request"));
 var Response_1 = __importDefault(require("./Response"));
+var util_1 = require("./util");
 var d = debug_1.default('server:Server');
 var Server = /** @class */ (function () {
     function Server(port, useSSL, cert, key) {
@@ -44,15 +45,17 @@ var Server = /** @class */ (function () {
         return new Promise(function (res, rej) {
             // need to parse to METHOD & path at minimum
             req.on('close', function () { return console.log('//todo'); }); // to remove from queue
+            // get what we're interested from the pure request
             var url = req.url, headers = req.headers, method = req.method, code = req.statusCode;
             var _a = url_1.parse(url || ''), query = _a.query, pathname = _a.pathname;
-            var parsedRequest = new Request_1.default({ url: url, headers: headers, method: method, code: code, query: query, pathname: pathname }, req);
+            // create request object
+            var requestOpts = { url: url, headers: headers, method: method, code: code, query: query, pathname: pathname };
+            var parsedRequest = new Request_1.default(requestOpts, req);
+            // attempt to parse incoming data
             var contentType = headers['content-type'];
             d("content type: " + contentType);
-            if (!('content-type' in headers)) {
-                res(parsedRequest);
-                return;
-            }
+            if (!('content-type' in headers))
+                return res(parsedRequest);
             // handleIncomingStream returns itself - resolve after handling
             parsedRequest.handleIncomingStream(contentType).then(res);
         });
@@ -67,37 +70,41 @@ var Server = /** @class */ (function () {
             cb();
         return this;
     };
+    /**
+     * go through each middleware, and add a next(), pointing to next function on that verb
+     * doing this on init means that lookups are o(1)
+     */
     Server.prototype.prepareMiddleware = function () {
         var _this = this;
         ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].forEach(function (verb) {
             var middlewares = Object.keys(_this.middleware[verb]);
+            d("middleware for " + verb + ": " + middlewares);
             for (var i = 0; i < middlewares.length; i += 1) {
-                var func = _this.middleware[verb][middlewares[i]];
-                var next = _this.middleware[verb][middlewares[i + 1]];
-                _this.middleware[verb][middlewares[i]] = { func: func, next: next };
+                var cur = _this.middleware[verb]; // current set of middleware
+                var idx = middlewares[i]; // current index
+                var func = cur[idx];
+                var next = cur[middlewares[i + 1]];
+                cur[idx] = { func: func, next: next };
                 if (!next) {
-                    var noop = function () { };
-                    _this.middleware[verb][middlewares[i]] = { func: func, noop: noop };
+                    cur[idx] = { func: func, next: util_1.noop };
                 }
             }
         });
     };
+    // todo: figure out how to do next() properly
     Server.prototype.handleRequest = function (req, res) {
         var method = req.method, url = req.url;
         d("method: " + method + ", url: " + url);
-        if (!method || !url) {
-            res.send('no method!');
-            return;
-        }
+        // this should never happen
+        if (!method || !url)
+            return res.send('no method!');
+        var pureMiddleware = this.middleware.pure.filter(function (ware) { return ware.url === '*' || ware.url === url; });
         var middleware = this.middleware[method][url];
-        // nothing? let the user know, don't hang
-        if (!middleware) {
-            res.send("unable to " + method + " on " + url + "!");
-            return;
-        }
-        // prepare next, if so desired
-        var next = function () { return middleware.next(req, res); };
-        middleware.func(req, res, next);
+        // nothing? let the user know, and close the connection
+        if (!middleware)
+            return res.send("unable to " + method + " on " + url + "!");
+        // invoke the middleware!
+        middleware.func(req, res, function () { return middleware.next(req, res); });
     };
     Server.prototype.static = function (path) {
         return this;
@@ -107,12 +114,12 @@ var Server = /** @class */ (function () {
     Server.prototype.use = function (urlOrMiddleware, middleware) {
         d('pure middleware added');
         // todo: figure out an efficient way to parse this
-        // if (typeof urlOrMiddleware === 'string') {
-        //   this.middleware.push({
-        //     url: urlOrMiddleware,
-        //     middleware,
-        //   })
-        // }
+        var pure = { func: middleware, url: urlOrMiddleware };
+        if (typeof urlOrMiddleware !== 'string') {
+            pure.func = urlOrMiddleware;
+            pure.url = '*';
+        }
+        this.middleware.pure.push(pure);
         return this;
     };
     Server.prototype.get = function (url, middleware) {

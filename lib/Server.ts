@@ -5,8 +5,9 @@ import queryString from 'querystring';
 import debug from 'debug';
 import fs from 'fs';
 
-import Request from './Request';
+import Request, { IRequest } from './Request';
 import Response from './Response';
+import { noop } from './util';
 
 const d = debug('server:Server');
 
@@ -20,6 +21,7 @@ interface Middleware {
 }
 
 interface ServerMiddleware {
+  pure: any[],
   [key: string]: Function | Object,
   GET: VerbMiddleware | Object,
   POST: VerbMiddleware | Object,
@@ -78,15 +80,19 @@ export default class Server {
       // need to parse to METHOD & path at minimum
       req.on('close', () => console.log('//todo')); // to remove from queue
       
+      // get what we're interested from the pure request
       const { url, headers, method, statusCode: code } = req;
       const { query, pathname } = parse(url || '');
-      const parsedRequest = new Request({ url, headers, method, code, query, pathname}, req);
+
+      // create request object
+      const requestOpts: IRequest = { url, headers, method, code, query, pathname};
+      const parsedRequest = new Request(requestOpts, req);
+
+      // attempt to parse incoming data
       const contentType = headers['content-type'];
       d(`content type: ${contentType}`);
-      if (!('content-type' in headers)) {
-        res(parsedRequest);
-        return;
-      }
+      if (!('content-type' in headers)) return res(parsedRequest);
+
       // handleIncomingStream returns itself - resolve after handling
       parsedRequest.handleIncomingStream(contentType).then(res);
     });
@@ -103,40 +109,47 @@ export default class Server {
     return this;
   }
 
+  /**
+   * go through each middleware, and add a next(), pointing to next function on that verb
+   * doing this on init means that lookups are o(1)
+   */
   prepareMiddleware(): void {
     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].forEach(verb => {
-      const middlewares = Object.keys(this.middleware[verb]);
+      const middlewares: string[] = Object.keys(this.middleware[verb]);
+      d(`middleware for ${verb}: ${middlewares}`);
       for (let i = 0; i < middlewares.length; i += 1) {
-        const func = this.middleware[verb][middlewares[i]];
-        const next = this.middleware[verb][middlewares[i + 1]];
-        this.middleware[verb][middlewares[i]] = { func, next };
+        const cur: object = this.middleware[verb]; // current set of middleware
+        const idx: string = middlewares[i]; // current index
+        const func: Function = cur[idx];
+        const next: Function = cur[middlewares[i + 1]];
+        cur[idx] = { func, next };
         if (!next) { 
-          const noop = () => {};
-          this.middleware[verb][middlewares[i]] = { func, noop };
+          cur[idx] = { func, next: noop };
         } 
       }
     });
   }
 
+  // todo: figure out how to do next() properly
   handleRequest(req: Request, res: Response): void {
     const { method, url }: { method: string | undefined, url: string | undefined } = req;
+    
     d(`method: ${method}, url: ${url}`);
-    if (!method || !url) {
-      res.send('no method!');
-      return;
-    }
+    
+    // this should never happen
+    if (!method || !url) return res.send('no method!');
+    
+    const pureMiddleware: Middleware[] = this.middleware.pure.filter(
+      ware => ware.url === '*' || ware.url === url
+    );
+
     const middleware: Middleware = this.middleware[method][url];
 
-    // nothing? let the user know, don't hang
-    if (!middleware) {
-      res.send(`unable to ${method} on ${url}!`);
-      return;
-    }
+    // nothing? let the user know, and close the connection
+    if (!middleware) return res.send(`unable to ${method} on ${url}!`);
 
-    // prepare next, if so desired
-    const next = () => middleware.next(req, res);
-
-    middleware.func(req, res, next);
+    // invoke the middleware!
+    middleware.func(req, res, () => middleware.next(req, res));
   }
 
   static(path: string): Server {
@@ -150,12 +163,12 @@ export default class Server {
   use(urlOrMiddleware: string | Function, middleware?: Function): Server {
     d('pure middleware added');
     // todo: figure out an efficient way to parse this
-    // if (typeof urlOrMiddleware === 'string') {
-    //   this.middleware.push({
-    //     url: urlOrMiddleware,
-    //     middleware,
-    //   })
-    // }
+    let pure = { func: middleware, url: urlOrMiddleware };
+    if (typeof urlOrMiddleware !== 'string') {
+      pure.func = urlOrMiddleware;
+      pure.url = '*';
+    }
+    this.middleware.pure.push(pure);
     return this;
   }
 
