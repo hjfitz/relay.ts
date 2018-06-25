@@ -33,11 +33,11 @@ var Server = /** @class */ (function () {
         var _this = this;
         d('connection to server made');
         // firstly, parse the request and response - make it a little more express-like
-        var parsedRes = new Response_1.default(res);
-        // go through each middleware, check and fire off
-        // eventualy add a queue
         Server.parseRequest(req).then(function (parsedReq) {
             d('Response and request parsed');
+            var parsedRes = new Response_1.default(res);
+            // go through each middleware, check and fire off
+            // eventualy add a queue
             _this.handleRequest(parsedReq, parsedRes);
         });
     };

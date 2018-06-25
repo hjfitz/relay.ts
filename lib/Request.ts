@@ -27,6 +27,7 @@ export default class Request {
   query: string;
   pathname: string;
   payload?: object | string;
+  private _cookies: string[];
 
   constructor(options: IRequest, pure: http.IncomingMessage) {
     this.url = options.url || 'unknown';
@@ -36,6 +37,7 @@ export default class Request {
     this.query = options.query || '';
     this.pathname = options.pathname || '/';
     this._req = pure;
+    this._cookies = pure.rawHeaders;
 
     d(`Request made to ${this.url}`);
   }

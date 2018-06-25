@@ -65,11 +65,11 @@ export default class Server {
   listener(req: http.IncomingMessage, res: http.ServerResponse): void {
     d('connection to server made');
     // firstly, parse the request and response - make it a little more express-like
-    const parsedRes = new Response(res);
-    // go through each middleware, check and fire off
-    // eventualy add a queue
     Server.parseRequest(req).then((parsedReq: Request) => {
       d('Response and request parsed');
+      const parsedRes: Response = new Response(res);
+      // go through each middleware, check and fire off
+      // eventualy add a queue
       this.handleRequest(parsedReq, parsedRes);
     });
   }

@@ -23,6 +23,7 @@ var Request = /** @class */ (function () {
         this.query = options.query || '';
         this.pathname = options.pathname || '/';
         this._req = pure;
+        this._cookies = pure.rawHeaders;
         d("Request made to " + this.url);
     }
     Request.prototype.handleIncomingStream = function (type) {

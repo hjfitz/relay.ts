@@ -10,14 +10,14 @@ const server = serv.createServer({
     'logger',
   ],
   static: [{ dir: '/lib', on: '/mounted' }]
-});
-
-server
+})
   .use((req, res, next) => {
     console.log(req.method);
     next();
   })
-  .get('/', (req, res, next) => next())
+  .get('/', (req, res, next) => {
+    next()
+  })
   .get('/json', (req, res) => res.json({ a:1 }))
   .get('/file', (req, res) => res.sendFile('./package.json'))
   .post('/', (req, res) => res.send('oi'))

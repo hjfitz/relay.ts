@@ -18,6 +18,7 @@ export default class Request {
     query: string;
     pathname: string;
     payload?: object | string;
+    private _cookies;
     constructor(options: IRequest, pure: http.IncomingMessage);
     handleIncomingStream(type?: string): Promise<Request>;
     parseData(body: string, type?: string): void;
