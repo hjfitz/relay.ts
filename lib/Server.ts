@@ -62,30 +62,30 @@ export default class Server {
     };
   }
 
-  listener(req: http.IncomingMessage, res: http.ServerResponse) {
+  listener(req: http.IncomingMessage, res: http.ServerResponse): void {
     d('connection to server made');
     // firstly, parse the request and response - make it a little more express-like
     const parsedRes = new Response(res);
     // go through each middleware, check and fire off
     // eventualy add a queue
-    this.parseRequest(req).then(parsedReq => {
+    Server.parseRequest(req).then((parsedReq: Request) => {
       d('Response and request parsed');
-      this.handleRequest(parsedReq, parsedRes)
+      this.handleRequest(parsedReq, parsedRes);
     });
   }
 
-  parseRequest(req: http.IncomingMessage): Promise<Request> {
-    return new Promise((res, rej) => {
+  static parseRequest(req: http.IncomingMessage): Promise<Request> {
+    return new Promise((res) => {
 
       // need to parse to METHOD & path at minimum
       req.on('close', () => console.log('//todo')); // to remove from queue
-      
+
       // get what we're interested from the pure request
       const { url, headers, method, statusCode: code } = req;
       const { query, pathname } = parse(url || '');
 
       // create request object
-      const requestOpts: IRequest = { url, headers, method, code, query, pathname};
+      const requestOpts: IRequest = { url, headers, method, code, query, pathname };
       const parsedRequest = new Request(requestOpts, req);
 
       // attempt to parse incoming data
@@ -104,8 +104,9 @@ export default class Server {
    */
   init(cb: Function): Server {
     this.prepareMiddleware();
-    this._server.listen(this.port);
-    if (cb) cb();
+    this._server.listen(this.port, () => {
+      if (cb) cb();
+    });
     return this;
   }
 
@@ -114,7 +115,7 @@ export default class Server {
    * doing this on init means that lookups are o(1)
    */
   prepareMiddleware(): void {
-    ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].forEach(verb => {
+    ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].forEach((verb) => {
       const middlewares: string[] = Object.keys(this.middleware[verb]);
       d(`middleware for ${verb}: ${middlewares}`);
       for (let i = 0; i < middlewares.length; i += 1) {
@@ -140,7 +141,7 @@ export default class Server {
     if (!method || !url) return res.send('no method!');
     
     const pureMiddleware: Middleware[] = this.middleware.pure.filter(
-      ware => ware.url === '*' || ware.url === url
+      ware => ware.url === '*' || ware.url === url,
     );
 
     const middleware: Middleware = this.middleware[method][url];
@@ -156,14 +157,11 @@ export default class Server {
     return this;
   }
 
-  enable(plugin: string): void {
-
-  }
 
   use(urlOrMiddleware: string | Function, middleware?: Function): Server {
     d('pure middleware added');
     // todo: figure out an efficient way to parse this
-    let pure = { func: middleware, url: urlOrMiddleware };
+    const pure = { func: middleware, url: urlOrMiddleware };
     if (typeof urlOrMiddleware !== 'string') {
       pure.func = urlOrMiddleware;
       pure.url = '*';
@@ -193,13 +191,12 @@ export default class Server {
   patch(url: string, middleware: Function): Server {
     d(`PATCH middleware for ${url} added`);
     this.middleware.PATCH[url] = middleware;
-    return this; 
-   }
+    return this;
+  }
 
   delete(url: string, middleware: Function): Server {
     d(`DELETE middleware for ${url} added`);
     this.middleware.DELETE[url] = middleware;
-    return this; 
+    return this;
   }
-
 }

@@ -1,5 +1,5 @@
-import Server from './Server';
 import debug from 'debug';
+import Server from './Server';
 
 const d = debug('server:index');
 
@@ -10,8 +10,6 @@ export interface ServerOptions {
   key?: string,
   plugins?: string[],
 };
-
-
 
 export const createServer = (options: ServerOptions): Server => {
   d('creating server');
@@ -37,9 +35,9 @@ export const createServer = (options: ServerOptions): Server => {
     server = new Server(port);
    }
 
-   if (plugins) {
-     plugins.forEach(plugin => server.enable(plugin));
-   }
+  //  if (plugins) {
+  //    plugins.forEach(plugin => server.enable(plugin));
+  //  }
 
    return server;
 

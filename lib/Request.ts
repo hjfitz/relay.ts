@@ -3,6 +3,8 @@ import debug from 'debug';
 import qs from 'querystring';
 import { clone } from 'lodash/lang';
 
+import * as util from './util';
+
 
 const d = debug('server:Request');
 
@@ -39,9 +41,10 @@ export default class Request {
   }
 
   handleIncomingStream(type?: string): Promise<Request> {
-    return new Promise((res, rej) => {
+    return new Promise((res) => {
       let body: string = '';
-      this._req.on('data', data => { 
+      this._req.on('data', (data) => { 
+        // kill early if we're getting too much info
         if (body.length > 1e6) this._req.connection.destroy();
         body += data;
       });
@@ -63,34 +66,12 @@ export default class Request {
         const parsed = JSON.parse(body);
         d('parse successful');
         this.payload = parsed;
-      } catch(err) {
+      } catch (err) {
         d(err);
         d('Unable to parse body');
       }
     } else if (type.includes('boundary') || body.includes('Boundary')) {
-      d('parsing form with boundary');
-      const [,delim]: string[] = type.split('=');
-      const splitBody: string[] = body.split('\n').map(line => line.replace(/\r/g, ''));
-      const keySplit: Array<string[]> = [];
-      const cur: string[] = [];
-
-      for (let i: number = 0; i < splitBody.length; i += 1) {
-        const line: string = splitBody[i];
-        if (line.includes(delim)) {
-          if (cur.length) keySplit.push(clone(cur));
-          cur.length = 0;
-        } else {
-          if (line.length) cur.push(line);
-        }
-      }
-
-      this.payload = keySplit.map(pair => {
-        const [unparsedKey, ...rest]: string[] = pair;
-        const key: string = unparsedKey.replace('Content-Disposition: form-data; name=', '').replace(/"/g, '');
-        const joined: any = rest.join();
-        return { [key]: rest.join() };
-      }).reduce((acc, cur) => Object.assign(acc, cur), {});
-
+      this.payload = util.parseBoundary(type, body);
     } else if (type === 'application/x-www-form-urlencoded') {
       d('parsing form x-www-formdata');
       d(qs.parse(body));

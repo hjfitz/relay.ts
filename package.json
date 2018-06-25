@@ -7,16 +7,17 @@
   "author": "Harry <hfitz83@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "build": "tsc"
+    "build": "rm dist/* && tsc --pretty"
   },
   "devDependencies": {
     "@types/debug": "^0.0.30",
-    "@types/lodash": "^4.14.106",
+    "@types/lodash": "^4.14.110",
     "@types/node": "^9.6.1",
     "tsc": "^1.20150623.0",
     "tslint": "^5.9.1",
     "tslint-config-airbnb": "^5.8.0",
-    "typescript": "^2.8.1"
+    "typescript": "^2.8.1",
+    "typescript-eslint-parser": "^15.0.0"
   },
   "dependencies": {
     "debug": "^3.1.0",

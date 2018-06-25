@@ -1,12 +1,17 @@
-# Mini API Server
+# TS Server
 > Serve Restful APIs with PERF and reliability
 
-Plugins:
-- Static files
-- next()
-- Compression (gzip + ???)
-- ~~Body parsing (by default)~~
-  - JSON (x)
-  - forms (partially)
-- cookie parsing - { credentials: 'include' }
-- sessions
+Absolutely micro abstraction over node's HTTP{S,} modules
+
+Features working:
+- [ ] Static files
+- [x] HTTP Verbs
+- [ ] `use` middleware
+- [ ] next()
+  - works for HTTP verbs - app.use is broken
+- [ ] Compression (gzip + ???)
+- [x] ~~Body parsing (by default)~~
+  - ~~JSON (x)~~
+  - ~~forms (partially)~~
+- [ ] cookie parsing - { credentials: 'include' }
+- [ ] sessions (consider binning this)

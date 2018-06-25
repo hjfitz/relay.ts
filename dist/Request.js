@@ -2,10 +2,17 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var debug_1 = __importDefault(require("debug"));
 var querystring_1 = __importDefault(require("querystring"));
-var lang_1 = require("lodash/lang");
+var util = __importStar(require("./util"));
 var d = debug_1.default('server:Request');
 var Request = /** @class */ (function () {
     function Request(options, pure) {
@@ -20,9 +27,10 @@ var Request = /** @class */ (function () {
     }
     Request.prototype.handleIncomingStream = function (type) {
         var _this = this;
-        return new Promise(function (res, rej) {
+        return new Promise(function (res) {
             var body = '';
             _this._req.on('data', function (data) {
+                // kill early if we're getting too much info
                 if (body.length > 1e6)
                     _this._req.connection.destroy();
                 body += data;
@@ -53,30 +61,7 @@ var Request = /** @class */ (function () {
             }
         }
         else if (type.includes('boundary') || body.includes('Boundary')) {
-            d('parsing form with boundary');
-            var _a = type.split('='), delim = _a[1];
-            var splitBody = body.split('\n').map(function (line) { return line.replace(/\r/g, ''); });
-            var keySplit = [];
-            var cur = [];
-            for (var i = 0; i < splitBody.length; i += 1) {
-                var line = splitBody[i];
-                if (line.includes(delim)) {
-                    if (cur.length)
-                        keySplit.push(lang_1.clone(cur));
-                    cur.length = 0;
-                }
-                else {
-                    if (line.length)
-                        cur.push(line);
-                }
-            }
-            this.payload = keySplit.map(function (pair) {
-                var unparsedKey = pair[0], rest = pair.slice(1);
-                var key = unparsedKey.replace('Content-Disposition: form-data; name=', '').replace(/"/g, '');
-                var joined = rest.join();
-                return _a = {}, _a[key] = rest.join(), _a;
-                var _a;
-            }).reduce(function (acc, cur) { return Object.assign(acc, cur); }, {});
+            this.payload = util.parseBoundary(type, body);
         }
         else if (type === 'application/x-www-form-urlencoded') {
             d('parsing form x-www-formdata');

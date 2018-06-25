@@ -21,6 +21,6 @@ server
   .get('/json', (req, res) => res.json({ a:1 }))
   .get('/file', (req, res) => res.sendFile('./package.json'))
   .post('/', (req, res) => res.send('oi'))
-  .init();
+  .init(() => console.log('listening on 8080'));
 
   

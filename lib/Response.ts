@@ -5,7 +5,6 @@ import fs from 'fs';
 const d = debug('server:Response');
 
 export default class Response {
-
   _res: http.ServerResponse;
 
   constructor(resp: http.ServerResponse) {
@@ -24,8 +23,8 @@ export default class Response {
     this._res.write(payload, encoding, () => {
       this._res.end();
     });
-  };
-  
+  }
+
   /**
    * read a file and send it
    * @param filename file to read
@@ -36,7 +35,7 @@ export default class Response {
     try {
       const contents: string = fs.readFileSync(filename, { encoding }).toString();
       this.send(contents, encoding);
-    } catch(err) {
+    } catch (err) {
       d(err);
     }
   }
@@ -52,7 +51,7 @@ export default class Response {
     this._res.setHeader('content-type', 'application/json');
     this.send(serialised);
   }
-  
+
   /**
    * Set a message and code, and end the connection
    * @param code HTTP code to send
@@ -71,5 +70,4 @@ export default class Response {
     d('closing connection');
     this._res.destroy(new Error('Server closed the connection'));
   }
-
 }

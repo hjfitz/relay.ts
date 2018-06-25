@@ -3,8 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var Server_1 = __importDefault(require("./Server"));
 var debug_1 = __importDefault(require("debug"));
+var Server_1 = __importDefault(require("./Server"));
 var d = debug_1.default('server:index');
 ;
 exports.createServer = function (options) {
@@ -27,8 +27,8 @@ exports.createServer = function (options) {
     else {
         server = new Server_1.default(port);
     }
-    if (plugins) {
-        plugins.forEach(function (plugin) { return server.enable(plugin); });
-    }
+    //  if (plugins) {
+    //    plugins.forEach(plugin => server.enable(plugin));
+    //  }
     return server;
 };

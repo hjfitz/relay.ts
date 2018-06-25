@@ -25,7 +25,6 @@ var Response = /** @class */ (function () {
             _this._res.end();
         });
     };
-    ;
     /**
      * read a file and send it
      * @param filename file to read

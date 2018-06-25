@@ -36,13 +36,13 @@ var Server = /** @class */ (function () {
         var parsedRes = new Response_1.default(res);
         // go through each middleware, check and fire off
         // eventualy add a queue
-        this.parseRequest(req).then(function (parsedReq) {
+        Server.parseRequest(req).then(function (parsedReq) {
             d('Response and request parsed');
             _this.handleRequest(parsedReq, parsedRes);
         });
     };
-    Server.prototype.parseRequest = function (req) {
-        return new Promise(function (res, rej) {
+    Server.parseRequest = function (req) {
+        return new Promise(function (res) {
             // need to parse to METHOD & path at minimum
             req.on('close', function () { return console.log('//todo'); }); // to remove from queue
             // get what we're interested from the pure request
@@ -65,9 +65,10 @@ var Server = /** @class */ (function () {
      */
     Server.prototype.init = function (cb) {
         this.prepareMiddleware();
-        this._server.listen(this.port);
-        if (cb)
-            cb();
+        this._server.listen(this.port, function () {
+            if (cb)
+                cb();
+        });
         return this;
     };
     /**
@@ -108,8 +109,6 @@ var Server = /** @class */ (function () {
     };
     Server.prototype.static = function (path) {
         return this;
-    };
-    Server.prototype.enable = function (plugin) {
     };
     Server.prototype.use = function (urlOrMiddleware, middleware) {
         d('pure middleware added');
