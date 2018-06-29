@@ -1,7 +1,7 @@
 import http from 'http';
 import debug from 'debug';
 import qs from 'querystring';
-import { clone } from 'lodash/lang';
+import clone from 'lodash/clone';
 
 import * as util from './util';
 
@@ -24,22 +24,31 @@ export default class Request {
   headers: http.IncomingHttpHeaders;
   method: string;
   code: number;
-  query: string;
+  query: object;
   pathname: string;
   payload?: object | string;
   private _cookies: string[];
 
   constructor(options: IRequest, pure: http.IncomingMessage) {
-    this.url = options.url || 'unknown';
+    this.url = options.pathname || 'unknown';
     this.headers = options.headers;
     this.method = options.method || 'unknown';
     this.code = options.code || 500;
-    this.query = options.query || '';
+    this.query = Request.parseQuery(options.query || '');
     this.pathname = options.pathname || '/';
     this._req = pure;
     this._cookies = pure.rawHeaders;
 
     d(`Request made to ${this.url}`);
+  }
+
+  static parseQuery(query?: string): object {
+    if (!query) return {};
+    return query.split('&').reduce((acc, pair) => {
+      const [key, value] = pair.split('=');
+      acc[key] = value;
+      return acc;
+    }, {});
   }
 
   handleIncomingStream(type?: string): Promise<Request> {

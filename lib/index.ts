@@ -1,5 +1,6 @@
 import debug from 'debug';
 import Server from './Server';
+import assert from 'assert';
 
 const d = debug('server:index');
 
@@ -14,12 +15,11 @@ export interface ServerOptions {
 export const createServer = (options: ServerOptions): Server => {
   d('creating server');
   // check for options
-  if (!options) throw new Error('Options missing!');
+  assert(options, 'Options missing!');
   
   // check for port
-  if (!('port' in options))  {
-    throw new Error('Port missing in options!');
-  }
+  assert('port' in options, 'Port missing in options!');
+  
 
   const useSSL: boolean = ('cert' in options) && ('key' in options);
   d(`Uses SSL: ${useSSL}`);

@@ -48,6 +48,7 @@ var Server = /** @class */ (function () {
             // get what we're interested from the pure request
             var url = req.url, headers = req.headers, method = req.method, code = req.statusCode;
             var _a = url_1.parse(url || ''), query = _a.query, pathname = _a.pathname;
+            d(url_1.parse(url || ''));
             // create request object
             var requestOpts = { url: url, headers: headers, method: method, code: code, query: query, pathname: pathname };
             var parsedRequest = new Request_1.default(requestOpts, req);
@@ -110,15 +111,13 @@ var Server = /** @class */ (function () {
     Server.prototype.static = function (path) {
         return this;
     };
-    Server.prototype.use = function (urlOrMiddleware, middleware) {
-        d('pure middleware added');
-        // todo: figure out an efficient way to parse this
-        var pure = { func: middleware, url: urlOrMiddleware };
-        if (typeof urlOrMiddleware !== 'string') {
-            pure.func = urlOrMiddleware;
-            pure.url = '*';
-        }
-        this.middleware.pure.push(pure);
+    Server.prototype.use = function (url, middleware) {
+        var _this = this;
+        d('pure middleware added for', url);
+        ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'].forEach(function (verb) {
+            // TODO figure out how to handle pure middleware with no url
+            _this.middleware[verb][url] = middleware;
+        });
         return this;
     };
     Server.prototype.get = function (url, middleware) {

@@ -1,4 +1,4 @@
-export declare function noop(): void;
+export declare const noop: () => void;
 /**
  *
  * @param type

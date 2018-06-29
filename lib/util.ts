@@ -1,9 +1,9 @@
 import debug from 'debug';
-import { clone } from 'lodash/lang';
+import clone from 'lodash/clone';
 
 const d = debug('Server:util');
 
-export function noop() {}
+export const noop = () => {};
 
 /**
  * 

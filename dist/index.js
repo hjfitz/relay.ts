@@ -5,17 +5,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var debug_1 = __importDefault(require("debug"));
 var Server_1 = __importDefault(require("./Server"));
+var assert_1 = __importDefault(require("assert"));
 var d = debug_1.default('server:index');
 ;
 exports.createServer = function (options) {
     d('creating server');
     // check for options
-    if (!options)
-        throw new Error('Options missing!');
+    assert_1.default(options, 'Options missing!');
     // check for port
-    if (!('port' in options)) {
-        throw new Error('Port missing in options!');
-    }
+    assert_1.default('port' in options, 'Port missing in options!');
     var useSSL = ('cert' in options) && ('key' in options);
     d("Uses SSL: " + useSSL);
     var port = options.port, cert = options.cert, key = options.key, plugins = options.plugins;

@@ -11,7 +11,7 @@ import { noop } from './util';
 
 const d = debug('server:Server');
 
-interface VerbMiddleware {
+export interface VerbMiddleware {
   [key: string]: FunctionConstructor,
 }
 
@@ -20,7 +20,7 @@ interface Middleware {
   next: Function,
 }
 
-interface ServerMiddleware {
+export interface ServerMiddleware {
   pure: any[],
   [key: string]: Function | Object,
   GET: VerbMiddleware | Object,
@@ -83,6 +83,7 @@ export default class Server {
       // get what we're interested from the pure request
       const { url, headers, method, statusCode: code } = req;
       const { query, pathname } = parse(url || '');
+      d(parse(url || ''));
 
       // create request object
       const requestOpts: IRequest = { url, headers, method, code, query, pathname };
@@ -158,15 +159,13 @@ export default class Server {
   }
 
 
-  use(urlOrMiddleware: string | Function, middleware?: Function): Server {
-    d('pure middleware added');
-    // todo: figure out an efficient way to parse this
-    const pure = { func: middleware, url: urlOrMiddleware };
-    if (typeof urlOrMiddleware !== 'string') {
-      pure.func = urlOrMiddleware;
-      pure.url = '*';
-    }
-    this.middleware.pure.push(pure);
+  use(url: string, middleware: Function): Server {
+    d('pure middleware added for', url);
+
+    ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'].forEach(verb => {
+      // TODO figure out how to handle pure middleware with no url
+      this.middleware[verb][url] = middleware;
+    })
     return this;
   }
 

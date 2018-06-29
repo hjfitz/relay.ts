@@ -16,16 +16,25 @@ var util = __importStar(require("./util"));
 var d = debug_1.default('server:Request');
 var Request = /** @class */ (function () {
     function Request(options, pure) {
-        this.url = options.url || 'unknown';
+        this.url = options.pathname || 'unknown';
         this.headers = options.headers;
         this.method = options.method || 'unknown';
         this.code = options.code || 500;
-        this.query = options.query || '';
+        this.query = Request.parseQuery(options.query || '');
         this.pathname = options.pathname || '/';
         this._req = pure;
         this._cookies = pure.rawHeaders;
         d("Request made to " + this.url);
     }
+    Request.parseQuery = function (query) {
+        if (!query)
+            return {};
+        return query.split('&').reduce(function (acc, pair) {
+            var _a = pair.split('='), key = _a[0], value = _a[1];
+            acc[key] = value;
+            return acc;
+        }, {});
+    };
     Request.prototype.handleIncomingStream = function (type) {
         var _this = this;
         return new Promise(function (res) {

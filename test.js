@@ -11,12 +11,9 @@ const server = serv.createServer({
   ],
   static: [{ dir: '/lib', on: '/mounted' }]
 })
-  .use((req, res, next) => {
-    console.log(req.method);
-    next();
-  })
-  .get('/', (req, res, next) => {
-    next()
+  .get('/baz', (req, res, next) => {
+    delete req._req;
+    res.json(req);
   })
   .get('/json', (req, res) => res.json({ a:1 }))
   .get('/file', (req, res) => res.sendFile('./package.json'))

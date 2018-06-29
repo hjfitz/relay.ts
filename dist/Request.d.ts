@@ -15,11 +15,12 @@ export default class Request {
     headers: http.IncomingHttpHeaders;
     method: string;
     code: number;
-    query: string;
+    query: object;
     pathname: string;
     payload?: object | string;
     private _cookies;
     constructor(options: IRequest, pure: http.IncomingMessage);
+    static parseQuery(query?: string): object;
     handleIncomingStream(type?: string): Promise<Request>;
     parseData(body: string, type?: string): void;
 }

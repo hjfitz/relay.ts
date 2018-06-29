@@ -4,10 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var debug_1 = __importDefault(require("debug"));
-var lang_1 = require("lodash/lang");
+var clone_1 = __importDefault(require("lodash/clone"));
 var d = debug_1.default('Server:util');
-function noop() { }
-exports.noop = noop;
+exports.noop = function () { };
 /**
  *
  * @param type
@@ -25,7 +24,7 @@ function parseBoundary(type, body) {
         d(line);
         if (line.includes(delim)) {
             if (cur.length)
-                keySplit.push(lang_1.clone(cur));
+                keySplit.push(clone_1.default(cur));
             cur.length = 0;
         }
         else {
