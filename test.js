@@ -15,6 +15,9 @@ const server = serv.createServer({
     delete req._req;
     res.json(req);
   })
+  .use('/', (req, res, next) => {
+    next();
+  })
   .get('/json', (req, res) => res.json({ a:1 }))
   .get('/file', (req, res) => res.sendFile('./package.json'))
   .post('/', (req, res) => res.send('oi'))

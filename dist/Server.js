@@ -86,10 +86,11 @@ var Server = /** @class */ (function () {
                 var idx = middlewares[i]; // current index
                 var func = cur[idx];
                 var next = cur[middlewares[i + 1]];
-                cur[idx] = { func: func, next: next };
+                cur[idx] = { func: func, next: next, idx: i };
                 if (!next) {
-                    cur[idx] = { func: func, next: util_1.noop };
+                    cur[idx] = { func: func, next: util_1.noop, idx: i };
                 }
+                d('Set middleware for', verb, 'as', cur[idx]);
             }
         });
     };
@@ -100,7 +101,6 @@ var Server = /** @class */ (function () {
         // this should never happen
         if (!method || !url)
             return res.send('no method!');
-        var pureMiddleware = this.middleware.pure.filter(function (ware) { return ware.url === '*' || ware.url === url; });
         var middleware = this.middleware[method][url];
         // nothing? let the user know, and close the connection
         if (!middleware)
@@ -114,6 +114,7 @@ var Server = /** @class */ (function () {
     Server.prototype.use = function (url, middleware) {
         var _this = this;
         d('pure middleware added for', url);
+        // add use to each of our verbs
         ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'].forEach(function (verb) {
             // TODO figure out how to handle pure middleware with no url
             _this.middleware[verb][url] = middleware;

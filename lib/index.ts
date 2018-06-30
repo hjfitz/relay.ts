@@ -6,11 +6,11 @@ const d = debug('server:index');
 
 
 export interface ServerOptions {
-  port: number,
-  cert?: string,
-  key?: string,
-  plugins?: string[],
-};
+  port: number;
+  cert?: string;
+  key?: string;
+  plugins?: string[];
+}
 
 export const createServer = (options: ServerOptions): Server => {
   d('creating server');
@@ -31,14 +31,9 @@ export const createServer = (options: ServerOptions): Server => {
 
   if (useSSL) {
     server = new Server(port, useSSL, cert, key);
-   } else {
+  } else {
     server = new Server(port);
-   }
+  }
 
-  //  if (plugins) {
-  //    plugins.forEach(plugin => server.enable(plugin));
-  //  }
-
-   return server;
-
+  return server;
 };

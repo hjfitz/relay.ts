@@ -1,7 +1,7 @@
 import http from 'http';
 import https from 'https';
 import { parse } from 'url';
-import queryString from 'querystring';
+import querystring from 'querystring';
 import debug from 'debug';
 import fs from 'fs';
 
@@ -12,30 +12,29 @@ import { noop } from './util';
 const d = debug('server:Server');
 
 export interface VerbMiddleware {
-  [key: string]: FunctionConstructor,
+  [key: string]: FunctionConstructor;
 }
 
 interface Middleware {
-  func: Function,
-  next: Function,
+  func: Function;
+  next: Function;
 }
 
 export interface ServerMiddleware {
-  pure: any[],
-  [key: string]: Function | Object,
-  GET: VerbMiddleware | Object,
-  POST: VerbMiddleware | Object,
-  PUT: VerbMiddleware | Object,
-  PATCH: VerbMiddleware | Object,
-  DELETE: VerbMiddleware | Object
+  [key: string]: Function | Object;
+  GET: VerbMiddleware | Object;
+  POST: VerbMiddleware | Object;
+  PUT: VerbMiddleware | Object;
+  PATCH: VerbMiddleware | Object;
+  DELETE: VerbMiddleware | Object;
 }
 
 interface ServerResponse {
-  json: Promise<{}>,
-  send: Promise<Function>,
-  sendFile: Promise<Function>,
-  sendStatus: Function,
-  end: Function
+  json: Promise<{}>;
+  send: Promise<Function>;
+  sendFile: Promise<Function>;
+  sendStatus: Function;
+  end: Function;
 }
 
 export default class Server {
@@ -124,10 +123,11 @@ export default class Server {
         const idx: string = middlewares[i]; // current index
         const func: Function = cur[idx];
         const next: Function = cur[middlewares[i + 1]];
-        cur[idx] = { func, next };
+        cur[idx] = { func, next, idx: i };
         if (!next) { 
-          cur[idx] = { func, next: noop };
-        } 
+          cur[idx] = { func, next: noop, idx: i };
+        }
+        d('Set middleware for', verb, 'as', cur[idx]);
       }
     });
   }
@@ -140,10 +140,6 @@ export default class Server {
     
     // this should never happen
     if (!method || !url) return res.send('no method!');
-    
-    const pureMiddleware: Middleware[] = this.middleware.pure.filter(
-      ware => ware.url === '*' || ware.url === url,
-    );
 
     const middleware: Middleware = this.middleware[method][url];
 
@@ -161,11 +157,11 @@ export default class Server {
 
   use(url: string, middleware: Function): Server {
     d('pure middleware added for', url);
-
-    ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'].forEach(verb => {
+    // add use to each of our verbs
+    ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'].forEach((verb: string) => {
       // TODO figure out how to handle pure middleware with no url
       this.middleware[verb][url] = middleware;
-    })
+    });
     return this;
   }
 

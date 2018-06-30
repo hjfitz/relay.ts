@@ -7,7 +7,6 @@ export interface VerbMiddleware {
     [key: string]: FunctionConstructor;
 }
 export interface ServerMiddleware {
-    pure: any[];
     [key: string]: Function | Object;
     GET: VerbMiddleware | Object;
     POST: VerbMiddleware | Object;

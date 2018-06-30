@@ -15,7 +15,7 @@ export function parseBoundary(type: string, body: string): object {
   const [,delim]: string[] = type.split('=');
   d(`delim: ${delim}`);
   const splitBody: string[] = body.split('\n').map(line => line.replace(/\r/g, ''));
-  const keySplit: Array<string[]> = [];
+  const keySplit: string[][] = [];
   const cur: string[] = [];
 
   for (let i: number = 0; i < splitBody.length; i += 1) {
@@ -29,9 +29,11 @@ export function parseBoundary(type: string, body: string): object {
     }
   }
 
-  const parsed: object = keySplit.map(pair => {
+  const parsed: object = keySplit.map((pair: string[]) => {
     const [unparsedKey, ...rest]: string[] = pair;
-    const key: string = unparsedKey.replace('Content-Disposition: form-data; name=', '').replace(/"/g, '');
+    const key: string = unparsedKey
+    .replace('Content-Disposition: form-data; name=', '')
+    .replace(/"/g, '');
     return { [key]: rest.join() };
   }).reduce((acc, cur) => Object.assign(acc, cur), {});
 

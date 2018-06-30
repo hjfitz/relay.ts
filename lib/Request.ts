@@ -1,6 +1,6 @@
 import http from 'http';
 import debug from 'debug';
-import qs from 'querystring';
+import querystring from 'querystring';
 import clone from 'lodash/clone';
 
 import * as util from './util';
@@ -9,13 +9,13 @@ import * as util from './util';
 const d = debug('server:Request');
 
 export interface IRequest {
-  url: string | undefined,
-  headers: http.IncomingHttpHeaders,
-  method?: string,
-  code: number | undefined,
-  query: string | null,
-  pathname?: string, 
-  payload?: object
+  url: string | undefined;
+  headers: http.IncomingHttpHeaders;
+  method?: string;
+  code: number | undefined;
+  query: string | null;
+  pathname?: string; 
+  payload?: object;
 }
 
 export default class Request {
@@ -48,7 +48,7 @@ export default class Request {
       const [key, value] = pair.split('=');
       acc[key] = value;
       return acc;
-    }, {});
+    },                             {});
   }
 
   handleIncomingStream(type?: string): Promise<Request> {
@@ -85,8 +85,8 @@ export default class Request {
       this.payload = util.parseBoundary(type, body);
     } else if (type === 'application/x-www-form-urlencoded') {
       d('parsing form x-www-formdata');
-      d(qs.parse(body));
-      const parsedForm = qs.parse(body);
+      d(querystring.parse(body));
+      const parsedForm = querystring.parse(body);
       d(typeof parsedForm);
       this.payload = parsedForm;
     } else {

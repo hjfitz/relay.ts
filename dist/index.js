@@ -7,7 +7,6 @@ var debug_1 = __importDefault(require("debug"));
 var Server_1 = __importDefault(require("./Server"));
 var assert_1 = __importDefault(require("assert"));
 var d = debug_1.default('server:index');
-;
 exports.createServer = function (options) {
     d('creating server');
     // check for options
@@ -25,8 +24,5 @@ exports.createServer = function (options) {
     else {
         server = new Server_1.default(port);
     }
-    //  if (plugins) {
-    //    plugins.forEach(plugin => server.enable(plugin));
-    //  }
     return server;
 };
