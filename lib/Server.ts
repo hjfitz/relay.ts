@@ -8,6 +8,7 @@ import fs from 'fs';
 import Request, { IRequest } from './Request';
 import Response from './Response';
 import { noop } from './util';
+import { isFunction } from 'util';
 
 const d = debug('server:Server');
 
@@ -18,6 +19,7 @@ export interface VerbMiddleware {
 interface Middleware {
   func: Function;
   next: Function;
+  idx: Number;
 }
 
 export interface ServerMiddleware {
@@ -123,10 +125,12 @@ export default class Server {
         const idx: string = middlewares[i]; // current index
         const func: Function = cur[idx];
         const next: Function = cur[middlewares[i + 1]];
+
+        // by giving each middleware an index, 
+        // we can check to ensure that pure middleware isn't invoked 
+        // where is isn't meant to be
         cur[idx] = { func, next, idx: i };
-        if (!next) { 
-          cur[idx] = { func, next: noop, idx: i };
-        }
+        if (!next) cur[idx] = { func, next: noop, idx: i };
         d('Set middleware for', verb, 'as', cur[idx]);
       }
     });
@@ -141,8 +145,13 @@ export default class Server {
     // this should never happen
     if (!method || !url) return res.send('no method!');
 
-    const middleware: Middleware = this.middleware[method][url];
+    const wildcard: Middleware = this.middleware[method]['*'];
+    let middleware: Middleware = this.middleware[method][url];
 
+    if (wildcard && wildcard.idx < middleware.idx) {
+      middleware = wildcard;
+    }
+    
     // nothing? let the user know, and close the connection
     if (!middleware) return res.send(`unable to ${method} on ${url}!`);
 
@@ -155,12 +164,19 @@ export default class Server {
   }
 
 
-  use(url: string, middleware: Function): Server {
-    d('pure middleware added for', url);
+  use(urlOrMiddleware: string | Function, middleware?: Function): Server {
+    if (typeof urlOrMiddleware === 'function') {
+      ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'].forEach((verb: string) => {
+        // TODO figure out how to handle pure middleware with no url
+        this.middleware[verb]['*'] = urlOrMiddleware;
+      });
+      return this;
+    }
+    d('pure middleware added for', urlOrMiddleware);
     // add use to each of our verbs
     ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'].forEach((verb: string) => {
-      // TODO figure out how to handle pure middleware with no url
-      this.middleware[verb][url] = middleware;
+      // TODO figure out how to handle pure middleware with no urlOrMiddleware
+      this.middleware[verb][urlOrMiddleware] = middleware;
     });
     return this;
   }

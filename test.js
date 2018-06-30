@@ -11,12 +11,13 @@ const server = serv.createServer({
   ],
   static: [{ dir: '/lib', on: '/mounted' }]
 })
+  .use((req, res, next) => {
+    console.log('oi');
+    next();
+  })
   .get('/baz', (req, res, next) => {
     delete req._req;
     res.json(req);
-  })
-  .use('/', (req, res, next) => {
-    next();
   })
   .get('/json', (req, res) => res.json({ a:1 }))
   .get('/file', (req, res) => res.sendFile('./package.json'))

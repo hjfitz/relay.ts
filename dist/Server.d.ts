@@ -32,7 +32,7 @@ export default class Server {
     prepareMiddleware(): void;
     handleRequest(req: Request, res: Response): void;
     static(path: string): Server;
-    use(url: string, middleware: Function): Server;
+    use(urlOrMiddleware: string | Function, middleware?: Function): Server;
     get(url: string, middleware: Function): Server;
     put(url: string, middleware: Function): Server;
     post(url: string, middleware: Function): Server;

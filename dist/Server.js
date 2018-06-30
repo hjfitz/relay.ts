@@ -86,10 +86,12 @@ var Server = /** @class */ (function () {
                 var idx = middlewares[i]; // current index
                 var func = cur[idx];
                 var next = cur[middlewares[i + 1]];
+                // by giving each middleware an index, 
+                // we can check to ensure that pure middleware isn't invoked 
+                // where is isn't meant to be
                 cur[idx] = { func: func, next: next, idx: i };
-                if (!next) {
+                if (!next)
                     cur[idx] = { func: func, next: util_1.noop, idx: i };
-                }
                 d('Set middleware for', verb, 'as', cur[idx]);
             }
         });
@@ -101,7 +103,11 @@ var Server = /** @class */ (function () {
         // this should never happen
         if (!method || !url)
             return res.send('no method!');
+        var wildcard = this.middleware[method]['*'];
         var middleware = this.middleware[method][url];
+        if (wildcard && wildcard.idx < middleware.idx) {
+            middleware = wildcard;
+        }
         // nothing? let the user know, and close the connection
         if (!middleware)
             return res.send("unable to " + method + " on " + url + "!");
@@ -111,13 +117,20 @@ var Server = /** @class */ (function () {
     Server.prototype.static = function (path) {
         return this;
     };
-    Server.prototype.use = function (url, middleware) {
+    Server.prototype.use = function (urlOrMiddleware, middleware) {
         var _this = this;
-        d('pure middleware added for', url);
+        if (typeof urlOrMiddleware === 'function') {
+            ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'].forEach(function (verb) {
+                // TODO figure out how to handle pure middleware with no url
+                _this.middleware[verb]['*'] = urlOrMiddleware;
+            });
+            return this;
+        }
+        d('pure middleware added for', urlOrMiddleware);
         // add use to each of our verbs
         ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'].forEach(function (verb) {
-            // TODO figure out how to handle pure middleware with no url
-            _this.middleware[verb][url] = middleware;
+            // TODO figure out how to handle pure middleware with no urlOrMiddleware
+            _this.middleware[verb][urlOrMiddleware] = middleware;
         });
         return this;
     };

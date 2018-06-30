@@ -9,9 +9,10 @@ Features working:
   - ~~forms (partially)~~
 - [x] HTTP Verbs
 - [ ] cookie parsing - { credentials: 'include' }
-- [ ] `use` middleware
+- [x] `use` middleware
 - [ ] Static files
-- [ ] next()
+- [x] next()
+- [x] query param parsing
   - works for HTTP verbs - app.use is broken
 - [ ] Compression (gzip + ???)
 - [ ] sessions (consider binning this)
