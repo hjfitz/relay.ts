@@ -11,6 +11,7 @@ const server = serv.createServer({
   ],
   static: [{ dir: '/lib', on: '/mounted' }]
 })
+// todo: move to queue - change middlewares[verb]['*'] to Middleware[]
   .use((req, res, next) => {
     console.log('oi');
     next();
