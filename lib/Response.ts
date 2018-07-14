@@ -11,6 +11,7 @@ export default class Response {
     this._res = resp;
     // default to plaintext response
     this._res.setHeader('content-type', 'text/plain');
+    this._res.setHeader('Set-Cookie', ['set-by=ts-server', 'something-else=wasp']);
   }
 
   /**

@@ -18,6 +18,7 @@ export default class Server {
     _server: https.Server | http.Server;
     middleware: ServerMiddleware;
     port: number;
+    waiting: ServerMiddleware[];
     constructor(port: number, useSSL?: boolean, cert?: string, key?: string);
     listener(req: http.IncomingMessage, res: http.ServerResponse): void;
     static parseRequest(req: http.IncomingMessage): Promise<Request>;

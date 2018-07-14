@@ -44,23 +44,19 @@ export default class Server {
   _server: https.Server | http.Server;
   middleware: ServerMiddleware;
   port: number;
+  waiting: ServerMiddleware[];
 
   constructor(port: number, useSSL: boolean = false, cert?: string, key?: string) {
     this.listener = this.listener.bind(this);
     this.port = port;
-    this._server = http.createServer(this.listener);
-    if (useSSL) {
-      this._server = https.createServer({ key, cert }, this.listener);
-    }
 
-    this.middleware = {
-      pure: [],
-      GET: {},
-      POST: {},
-      PUT: {},
-      PATCH: {},
-      DELETE: {},
-    };
+    // instantiate a http(s) server
+    this._server = http.createServer(this.listener);
+    if (useSSL) this._server = https.createServer({ key, cert }, this.listener);
+    
+    this.waiting = [];
+
+    this.middleware = { GET: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
   }
 
   listener(req: http.IncomingMessage, res: http.ServerResponse): void {
@@ -148,7 +144,7 @@ export default class Server {
     const wildcard: Middleware = this.middleware[method]['*'];
     let middleware: Middleware = this.middleware[method][url];
 
-    if (wildcard && wildcard.idx < middleware.idx) {
+    if ((wildcard  && middleware) && wildcard.idx < middleware.idx) {
       middleware = wildcard;
     }
     

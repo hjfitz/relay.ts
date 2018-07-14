@@ -2,7 +2,7 @@
   "name": "express-clone",
   "version": "1.0.0",
   "description": "A basic Express-esque HTTP(S) server",
-  "main": "dist/index.js",
+  "main": "test.js",
   "repository": "https://github.com/hjfitz/express-clone",
   "author": "Harry <hfitz83@gmail.com>",
   "license": "MIT",

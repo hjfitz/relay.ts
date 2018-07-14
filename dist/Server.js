@@ -16,18 +16,12 @@ var Server = /** @class */ (function () {
         if (useSSL === void 0) { useSSL = false; }
         this.listener = this.listener.bind(this);
         this.port = port;
+        // instantiate a http(s) server
         this._server = http_1.default.createServer(this.listener);
-        if (useSSL) {
+        if (useSSL)
             this._server = https_1.default.createServer({ key: key, cert: cert }, this.listener);
-        }
-        this.middleware = {
-            pure: [],
-            GET: {},
-            POST: {},
-            PUT: {},
-            PATCH: {},
-            DELETE: {},
-        };
+        this.waiting = [];
+        this.middleware = { GET: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
     }
     Server.prototype.listener = function (req, res) {
         var _this = this;
@@ -105,7 +99,7 @@ var Server = /** @class */ (function () {
             return res.send('no method!');
         var wildcard = this.middleware[method]['*'];
         var middleware = this.middleware[method][url];
-        if (wildcard && wildcard.idx < middleware.idx) {
+        if ((wildcard && middleware) && wildcard.idx < middleware.idx) {
             middleware = wildcard;
         }
         // nothing? let the user know, and close the connection

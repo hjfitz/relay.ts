@@ -11,6 +11,7 @@ var Response = /** @class */ (function () {
         this._res = resp;
         // default to plaintext response
         this._res.setHeader('content-type', 'text/plain');
+        this._res.setHeader('Set-Cookie', ['set-by=ts-server', 'something-else=wasp']);
     }
     /**
      * Send some data, and once it's flushed - end the connection

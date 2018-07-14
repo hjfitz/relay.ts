@@ -13,8 +13,12 @@ const server = serv.createServer({
 })
 // todo: move to queue - change middlewares[verb]['*'] to Middleware[]
   .use((req, res, next) => {
-    console.log('oi');
+    console.log('this shit invoked?');
     next();
+  })
+  .use((req, res) => {
+    console.log('this also invoked??');
+    res.send('yep');
   })
   .get('/baz', (req, res, next) => {
     delete req._req;
