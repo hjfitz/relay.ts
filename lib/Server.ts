@@ -9,6 +9,7 @@ import Request, { IRequest } from './Request';
 import Response from './Response';
 import { noop } from './util';
 import { isFunction } from 'util';
+import { url } from 'inspector';
 
 const d = debug('server:Server');
 
@@ -101,11 +102,14 @@ export default class Server {
    * @param cb Callback function to run when server is running
    */
   init(cb: Function): Server {
-    this.prepareMiddleware();
+    // this.prepareMiddleware();
     this._server.listen(this.port, () => {
       if (cb) cb();
     });
     return this;
+  }
+
+  prepareMiddlewareNew(): void {
   }
 
   /**
@@ -121,7 +125,7 @@ export default class Server {
         const idx: string = middlewares[i]; // current index
         const func: Function = cur[idx];
         const next: Function = cur[middlewares[i + 1]];
-
+        
         // by giving each middleware an index, 
         // we can check to ensure that pure middleware isn't invoked 
         // where is isn't meant to be
@@ -141,18 +145,16 @@ export default class Server {
     // this should never happen
     if (!method || !url) return res.send('no method!');
 
-    const wildcard: Middleware = this.middleware[method]['*'];
-    let middleware: Middleware = this.middleware[method][url];
-
-    if ((wildcard  && middleware) && wildcard.idx < middleware.idx) {
-      middleware = wildcard;
-    }
+    const middlewares: Middleware[] = this.middleware[method][url];
+    console.log(middlewares);
+    const middleware: Middleware = middlewares[0];
     
     // nothing? let the user know, and close the connection
     if (!middleware) return res.send(`unable to ${method} on ${url}!`);
 
     // invoke the middleware!
-    middleware.func(req, res, () => middleware.next(req, res));
+    // TODO: recursively add next()
+    middleware.func(req, res, () => middleware.link.func(req, res, middleware.link.next));
   }
 
   static(path: string): Server {
@@ -177,33 +179,55 @@ export default class Server {
     return this;
   }
 
+  private addMiddleware(method: string, url: string, middleware: Function): void {
+    const curMethod = this.middleware[method];
+    const newWare = { func: middleware, next: noop };
+    // check if array and push
+    if (Array.isArray(curMethod[url])) {
+      curMethod[url].push(newWare);
+      for (let i: number = 0; i < curMethod[url].length; i += 1) {
+        const cur = curMethod[url][i];
+        const nextLink = curMethod[url][i + 1];
+        cur.link = nextLink;
+      }
+      // curMethod[url].forEach((mw: Middleware, idx: number) => {
+      //   const next = curMethod[url][idx + 1] ? curMethod[url][idx + 1].func : noop;
+      //   mw.next = next;
+      // });
+    } else {
+      // if not, create and add index
+      curMethod[url] = [newWare];
+    }
+    // special case for wildcard
+  }
+
   get(url: string, middleware: Function): Server {
     d(`GET middleware for ${url} added`);
-    this.middleware.GET[url] = middleware;
+    this.addMiddleware('GET', url, middleware);
     return this;
   }
 
   put(url: string, middleware: Function): Server {
     d(`PUT middleware for ${url} added`);
-    this.middleware.PUT[url] = middleware;
+    this.addMiddleware('PUT', url, middleware);
     return this;  
   }
 
   post(url: string, middleware: Function): Server {
     d(`POST middleware for ${url} added`);
-    this.middleware.POST[url] = middleware;
+    this.addMiddleware('POST', url, middleware);
     return this; 
   }
 
   patch(url: string, middleware: Function): Server {
     d(`PATCH middleware for ${url} added`);
-    this.middleware.PATCH[url] = middleware;
+    this.addMiddleware('PATCH', url, middleware);
     return this;
   }
 
   delete(url: string, middleware: Function): Server {
     d(`DELETE middleware for ${url} added`);
-    this.middleware.DELETE[url] = middleware;
+    this.addMiddleware('DELETE', url, middleware);
     return this;
   }
 }

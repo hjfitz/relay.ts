@@ -26,6 +26,7 @@ export default class Server {
      * @param cb Callback function to run when server is running
      */
     init(cb: Function): Server;
+    prepareMiddlewareNew(): void;
     /**
      * go through each middleware, and add a next(), pointing to next function on that verb
      * doing this on init means that lookups are o(1)
@@ -34,6 +35,7 @@ export default class Server {
     handleRequest(req: Request, res: Response): void;
     static(path: string): Server;
     use(urlOrMiddleware: string | Function, middleware?: Function): Server;
+    private addMiddleware(method, url, middleware);
     get(url: string, middleware: Function): Server;
     put(url: string, middleware: Function): Server;
     post(url: string, middleware: Function): Server;

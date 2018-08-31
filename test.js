@@ -20,7 +20,16 @@ const server = serv.createServer({
     console.log('this also invoked??');
     res.send('yep');
   })
-  .get('/baz', (req, res, next) => {
+  .get('/', (req, res, next) => {
+    console.log('passing 1')
+    next();
+  })
+  .get('/', (req, res, next) => {
+    console.log(next);
+    console.log('passing 2')
+    next();
+  })
+  .get('/', (req, res, next) => {
     delete req._req;
     res.json(req);
   })

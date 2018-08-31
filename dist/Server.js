@@ -59,12 +59,14 @@ var Server = /** @class */ (function () {
      * @param cb Callback function to run when server is running
      */
     Server.prototype.init = function (cb) {
-        this.prepareMiddleware();
+        // this.prepareMiddleware();
         this._server.listen(this.port, function () {
             if (cb)
                 cb();
         });
         return this;
+    };
+    Server.prototype.prepareMiddlewareNew = function () {
     };
     /**
      * go through each middleware, and add a next(), pointing to next function on that verb
@@ -97,16 +99,15 @@ var Server = /** @class */ (function () {
         // this should never happen
         if (!method || !url)
             return res.send('no method!');
-        var wildcard = this.middleware[method]['*'];
-        var middleware = this.middleware[method][url];
-        if ((wildcard && middleware) && wildcard.idx < middleware.idx) {
-            middleware = wildcard;
-        }
+        var middlewares = this.middleware[method][url];
+        console.log(middlewares);
+        var middleware = middlewares[0];
         // nothing? let the user know, and close the connection
         if (!middleware)
             return res.send("unable to " + method + " on " + url + "!");
         // invoke the middleware!
-        middleware.func(req, res, function () { return middleware.next(req, res); });
+        // TODO: recursively add next()
+        middleware.func(req, res, function () { return middleware.link.func(req, res, middleware.link.next); });
     };
     Server.prototype.static = function (path) {
         return this;
@@ -128,29 +129,51 @@ var Server = /** @class */ (function () {
         });
         return this;
     };
+    Server.prototype.addMiddleware = function (method, url, middleware) {
+        var curMethod = this.middleware[method];
+        var newWare = { func: middleware, next: util_1.noop };
+        // check if array and push
+        if (Array.isArray(curMethod[url])) {
+            curMethod[url].push(newWare);
+            for (var i = 0; i < curMethod[url].length; i += 1) {
+                var cur = curMethod[url][i];
+                var nextLink = curMethod[url][i + 1];
+                cur.link = nextLink;
+            }
+            // curMethod[url].forEach((mw: Middleware, idx: number) => {
+            //   const next = curMethod[url][idx + 1] ? curMethod[url][idx + 1].func : noop;
+            //   mw.next = next;
+            // });
+        }
+        else {
+            // if not, create and add index
+            curMethod[url] = [newWare];
+        }
+        // special case for wildcard
+    };
     Server.prototype.get = function (url, middleware) {
         d("GET middleware for " + url + " added");
-        this.middleware.GET[url] = middleware;
+        this.addMiddleware('GET', url, middleware);
         return this;
     };
     Server.prototype.put = function (url, middleware) {
         d("PUT middleware for " + url + " added");
-        this.middleware.PUT[url] = middleware;
+        this.addMiddleware('PUT', url, middleware);
         return this;
     };
     Server.prototype.post = function (url, middleware) {
         d("POST middleware for " + url + " added");
-        this.middleware.POST[url] = middleware;
+        this.addMiddleware('POST', url, middleware);
         return this;
     };
     Server.prototype.patch = function (url, middleware) {
         d("PATCH middleware for " + url + " added");
-        this.middleware.PATCH[url] = middleware;
+        this.addMiddleware('PATCH', url, middleware);
         return this;
     };
     Server.prototype.delete = function (url, middleware) {
         d("DELETE middleware for " + url + " added");
-        this.middleware.DELETE[url] = middleware;
+        this.addMiddleware('DELETE', url, middleware);
         return this;
     };
     return Server;
