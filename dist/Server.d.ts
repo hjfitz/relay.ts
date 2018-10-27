@@ -14,31 +14,36 @@ export interface ServerMiddleware {
     PATCH: VerbMiddleware | Object;
     DELETE: VerbMiddleware | Object;
 }
-export default class Server {
+declare class Server {
     _server: https.Server | http.Server;
-    middleware: ServerMiddleware;
+    mwCount: number;
+    middleware: any;
     port: number;
-    waiting: ServerMiddleware[];
+    all: Function;
+    get: Function;
+    head: Function;
+    patch: Function;
+    options: Function;
+    connect: Function;
+    delete: Function;
+    trace: Function;
+    post: Function;
+    put: Function;
+    use: Function;
     constructor(port: number, useSSL?: boolean, cert?: string, key?: string);
     listener(req: http.IncomingMessage, res: http.ServerResponse): void;
     static parseRequest(req: http.IncomingMessage): Promise<Request>;
     /**
      * @param cb Callback function to run when server is running
      */
-    init(cb: Function): Server;
-    prepareMiddlewareNew(): void;
+    init(cb?: Function): Server;
     /**
      * go through each middleware, and add a next(), pointing to next function on that verb
      * doing this on init means that lookups are o(1)
      */
     prepareMiddleware(): void;
     handleRequest(req: Request, res: Response): void;
-    static(path: string): Server;
-    use(urlOrMiddleware: string | Function, middleware?: Function): Server;
-    private addMiddleware(method, url, middleware);
-    get(url: string, middleware: Function): Server;
-    put(url: string, middleware: Function): Server;
-    post(url: string, middleware: Function): Server;
-    patch(url: string, middleware: Function): Server;
-    delete(url: string, middleware: Function): Server;
+    private add(method, url, middleware?);
+    private addMw(method, url, middleware);
 }
+export default Server;

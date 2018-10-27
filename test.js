@@ -1,7 +1,9 @@
 const serv = require('./dist');
 
+const port = 8888;
+
 const server = serv.createServer({
-  port: 8080,
+  port,
   plugins: [
     'body-parser', 
     'compression', 
@@ -11,31 +13,21 @@ const server = serv.createServer({
   ],
   static: [{ dir: '/lib', on: '/mounted' }]
 })
+.use('/oioi', (req, res) => res.send('oi'))
 // todo: move to queue - change middlewares[verb]['*'] to Middleware[]
-  .use((req, res, next) => {
-    console.log('this shit invoked?');
-    next();
-  })
-  .use((req, res) => {
-    console.log('this also invoked??');
-    res.send('yep');
-  })
-  .get('/', (req, res, next) => {
-    console.log('passing 1')
-    next();
-  })
-  .get('/', (req, res, next) => {
-    console.log(next);
-    console.log('passing 2')
-    next();
-  })
-  .get('/', (req, res, next) => {
-    delete req._req;
-    res.json(req);
-  })
-  .get('/json', (req, res) => res.json({ a:1 }))
-  .get('/file', (req, res) => res.sendFile('./package.json'))
-  .post('/', (req, res) => res.send('oi'))
-  .init(() => console.log('listening on 8080'));
+.get('/', (req, res, next) => {
+  delete req._req;
+  res.json(req);
+})
+.use((req, res) => res.send('oi'))
+.get('/json', (req, res) => res.json({ a:1 }))
+.get('/file', (req, res) => res.sendFile('./package.json'))
+.post('/', (req, res) => res.send('oi'))
+.use('*', (req, res, next) => {
+  console.log('this shit invoked?');
+  next();
+})
+.use('/json', (req, res) => res.json({ a: 2}))
+  .init(() => console.log('listening on', port));
 
   

@@ -1,15 +1,11 @@
 import http from 'http';
 import https from 'https';
 import { parse } from 'url';
-import querystring from 'querystring';
 import debug from 'debug';
-import fs from 'fs';
 
 import Request, { IRequest } from './Request';
 import Response from './Response';
 import { noop } from './util';
-import { isFunction } from 'util';
-import { url } from 'inspector';
 
 const d = debug('server:Server');
 
@@ -40,24 +36,46 @@ interface ServerResponse {
   end: Function;
 }
 
-export default class Server {
+class Server {
 
   _server: https.Server | http.Server;
-  middleware: ServerMiddleware;
+  mwCount: number;
+  middleware: any;
   port: number;
-  waiting: ServerMiddleware[];
+  all: Function;
+  get: Function; 
+  head: Function;
+  patch: Function ;
+  options: Function; 
+  connect: Function;
+  delete: Function;
+  trace: Function;
+  post: Function;
+  put: Function;
+  use: Function;
 
   constructor(port: number, useSSL: boolean = false, cert?: string, key?: string) {
+    this.mwCount = 0;
     this.listener = this.listener.bind(this);
     this.port = port;
-
     // instantiate a http(s) server
     this._server = http.createServer(this.listener);
     if (useSSL) this._server = https.createServer({ key, cert }, this.listener);
     
-    this.waiting = [];
+    // this.middleware = { GET: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
+    this.middleware = {};
 
-    this.middleware = { GET: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
+    this.all = this.add.bind(this, '*');
+    this.use = this.add.bind(this, '*');
+    this.get = this.add.bind(this, 'GET');
+    this.head = this.add.bind(this, 'HEAD');
+    this.patch = this.add.bind(this, 'PATCH');
+    this.options = this.add.bind(this, 'OPTIONS');
+    this.connect = this.add.bind(this, 'CONNECT');
+    this.delete = this.add.bind(this, 'DELETE');
+    this.trace = this.add.bind(this, 'TRACE');
+    this.post = this.add.bind(this, 'POST');
+    this.put = this.add.bind(this, 'PUT');
   }
 
   listener(req: http.IncomingMessage, res: http.ServerResponse): void {
@@ -73,43 +91,38 @@ export default class Server {
   }
 
   static parseRequest(req: http.IncomingMessage): Promise<Request> {
-    return new Promise((res) => {
 
       // need to parse to METHOD & path at minimum
-      req.on('close', () => console.log('//todo')); // to remove from queue
+    req.on('close', () => console.log('//todo')); // to remove from queue
 
       // get what we're interested from the pure request
-      const { url, headers, method, statusCode: code } = req;
-      const { query, pathname } = parse(url || '');
-      d(parse(url || ''));
+    const { url, headers, method, statusCode: code } = req;
+    const { query, pathname } = parse(url || '');
+    d(parse(url || ''));
 
       // create request object
-      const requestOpts: IRequest = { url, headers, method, code, query, pathname };
-      const parsedRequest = new Request(requestOpts, req);
+    const requestOpts: IRequest = { url, headers, method, code, query, pathname };
+    const parsedRequest = new Request(requestOpts, req);
 
       // attempt to parse incoming data
-      const contentType = headers['content-type'];
-      d(`content type: ${contentType}`);
-      if (!('content-type' in headers)) return res(parsedRequest);
+    const contentType = headers['content-type'];
+    d(`content type: ${contentType}`);
+    if (!('content-type' in headers)) return Promise.resolve(parsedRequest);
 
       // handleIncomingStream returns itself - resolve after handling
-      parsedRequest.handleIncomingStream(contentType).then(res);
-    });
+    return parsedRequest.handleIncomingStream(contentType);
   }
 
 
   /**
    * @param cb Callback function to run when server is running
    */
-  init(cb: Function): Server {
-    // this.prepareMiddleware();
+  init(cb?: Function): Server {
+    this.prepareMiddleware();
     this._server.listen(this.port, () => {
       if (cb) cb();
     });
     return this;
-  }
-
-  prepareMiddlewareNew(): void {
   }
 
   /**
@@ -117,23 +130,35 @@ export default class Server {
    * doing this on init means that lookups are o(1)
    */
   prepareMiddleware(): void {
-    ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].forEach((verb) => {
-      const middlewares: string[] = Object.keys(this.middleware[verb]);
-      d(`middleware for ${verb}: ${middlewares}`);
-      for (let i = 0; i < middlewares.length; i += 1) {
-        const cur: object = this.middleware[verb]; // current set of middleware
-        const idx: string = middlewares[i]; // current index
-        const func: Function = cur[idx];
-        const next: Function = cur[middlewares[i + 1]];
-        
-        // by giving each middleware an index, 
-        // we can check to ensure that pure middleware isn't invoked 
-        // where is isn't meant to be
-        cur[idx] = { func, next, idx: i };
-        if (!next) cur[idx] = { func, next: noop, idx: i };
-        d('Set middleware for', verb, 'as', cur[idx]);
-      }
+    d('preparing midleware');
+    const all = this.middleware['*'];
+    // apply all '*' to each method
+    // todo: do this for every possible verb
+    Object.keys(this.middleware).forEach((verb: string) => {
+      if (verb === '*') return;
+      const middlewares = this.middleware[verb];
+      Object.keys(middlewares).forEach((url: string) => {
+        middlewares[url].push(...all[url]);
+      });
     });
+    d('verbs handled');
+    // put all wildcard urls on the end of each url
+    // todo: make sure this isn't repeated
+    Object.keys(this.middleware).forEach((verb: string) => {
+      const mwStack = this.middleware[verb];
+      const wildcard = mwStack['*'];
+      Object.keys(mwStack).forEach((url: string) => {
+        if (url === '*') return;
+        const curStack = mwStack[url];
+        curStack.push(...wildcard);
+        mwStack[url] = curStack.sort((mw1, mw2) => {
+          if (mw1.idx < mw2.idx) return -1;
+          if (mw2.idx > mw2.idx) return 1;
+          return 0;
+        });
+      });
+    });
+    d('middleware prepped');
   }
 
   // todo: figure out how to do next() properly
@@ -146,88 +171,33 @@ export default class Server {
     if (!method || !url) return res.send('no method!');
 
     const middlewares: Middleware[] = this.middleware[method][url];
-    console.log(middlewares);
-    const middleware: Middleware = middlewares[0];
-    
     // nothing? let the user know, and close the connection
-    if (!middleware) return res.send(`unable to ${method} on ${url}!`);
+    if (!middlewares) return res.send(`unable to ${method} on ${url}!`);
+    
+    const middleware: Middleware = middlewares[0];
 
     // invoke the middleware!
-    // TODO: recursively add next()
-    middleware.func(req, res, () => middleware.link.func(req, res, middleware.link.next));
+    middleware.func(req, res); // , () => middleware.link.func(req, res, middleware.link.next));
   }
 
-  static(path: string): Server {
-    return this;
+  private add(method: string, url: string|Function, middleware?: Function): Server {
+    if (typeof url === 'string' && middleware) return this.addMw(method, url, middleware);
+    if (url instanceof Function) return this.addMw(method, '*', url);
+    throw new Error('should not get here');
   }
+  
+  private addMw(method: string, url: string, middleware: Function): Server {
+    const newWare = { func: middleware, idx: this.mwCount };
+    
+    if (! (method in this.middleware)) this.middleware[method] = {};
+    if (!(url in this.middleware[method])) this.middleware[method][url] = [newWare];
+    else this.middleware[method][url].push(newWare);
+    
+    d(`${method} middleware for ${url} added`);
+    this.mwCount += 1;
 
-
-  use(urlOrMiddleware: string | Function, middleware?: Function): Server {
-    if (typeof urlOrMiddleware === 'function') {
-      ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'].forEach((verb: string) => {
-        // TODO figure out how to handle pure middleware with no url
-        this.middleware[verb]['*'] = urlOrMiddleware;
-      });
-      return this;
-    }
-    d('pure middleware added for', urlOrMiddleware);
-    // add use to each of our verbs
-    ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'].forEach((verb: string) => {
-      // TODO figure out how to handle pure middleware with no urlOrMiddleware
-      this.middleware[verb][urlOrMiddleware] = middleware;
-    });
-    return this;
-  }
-
-  private addMiddleware(method: string, url: string, middleware: Function): void {
-    const curMethod = this.middleware[method];
-    const newWare = { func: middleware, next: noop };
-    // check if array and push
-    if (Array.isArray(curMethod[url])) {
-      curMethod[url].push(newWare);
-      for (let i: number = 0; i < curMethod[url].length; i += 1) {
-        const cur = curMethod[url][i];
-        const nextLink = curMethod[url][i + 1];
-        cur.link = nextLink;
-      }
-      // curMethod[url].forEach((mw: Middleware, idx: number) => {
-      //   const next = curMethod[url][idx + 1] ? curMethod[url][idx + 1].func : noop;
-      //   mw.next = next;
-      // });
-    } else {
-      // if not, create and add index
-      curMethod[url] = [newWare];
-    }
-    // special case for wildcard
-  }
-
-  get(url: string, middleware: Function): Server {
-    d(`GET middleware for ${url} added`);
-    this.addMiddleware('GET', url, middleware);
-    return this;
-  }
-
-  put(url: string, middleware: Function): Server {
-    d(`PUT middleware for ${url} added`);
-    this.addMiddleware('PUT', url, middleware);
-    return this;  
-  }
-
-  post(url: string, middleware: Function): Server {
-    d(`POST middleware for ${url} added`);
-    this.addMiddleware('POST', url, middleware);
-    return this; 
-  }
-
-  patch(url: string, middleware: Function): Server {
-    d(`PATCH middleware for ${url} added`);
-    this.addMiddleware('PATCH', url, middleware);
-    return this;
-  }
-
-  delete(url: string, middleware: Function): Server {
-    d(`DELETE middleware for ${url} added`);
-    this.addMiddleware('DELETE', url, middleware);
     return this;
   }
 }
+
+export default Server;
