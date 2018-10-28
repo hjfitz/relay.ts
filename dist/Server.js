@@ -38,23 +38,33 @@ var Server = /** @class */ (function () {
         var _this = this;
         d('connection to server made');
         // firstly, parse the request and response - make it a little more express-like
-        Server.parseRequest(req).then(function (parsedReq) {
+        this.parseRequest(req).then(function (parsedReq) {
+            var method = parsedReq.method, pathname = parsedReq.pathname;
+            // default to GET if no method
+            var mws = _this.middleware[method || 'GET'];
+            var urlMws = mws[pathname || '*'];
+            console.log({ urlMws: urlMws });
             d('Response and request parsed');
-            var parsedRes = new Response_1.default(res);
+            var parsedRes = new Response_1.default(res, parsedReq, urlMws);
             // go through each middleware, check and fire off
             // eventualy add a queue
             _this.handleRequest(parsedReq, parsedRes);
         });
     };
-    Server.parseRequest = function (req) {
+    // todo: add stack to req
+    Server.prototype.parseRequest = function (req) {
         // need to parse to METHOD & path at minimum
         req.on('close', function () { return console.log('//todo'); }); // to remove from queue
         // get what we're interested from the pure request
         var url = req.url, headers = req.headers, method = req.method, code = req.statusCode;
         var _a = url_1.parse(url || ''), query = _a.query, pathname = _a.pathname;
-        d(url_1.parse(url || ''));
+        d('url parsed: ', pathname);
+        // default to GET if no method
+        var mws = this.middleware[method || 'GET'];
+        var urlMws = mws[pathname || '*'];
+        // console.log({ urlMws });
         // create request object
-        var requestOpts = { url: url, headers: headers, method: method, code: code, query: query, pathname: pathname };
+        var requestOpts = { url: url, headers: headers, method: method, code: code, query: query, pathname: pathname, urlMws: urlMws };
         var parsedRequest = new Request_1.default(requestOpts, req);
         // attempt to parse incoming data
         var contentType = headers['content-type'];
@@ -85,18 +95,23 @@ var Server = /** @class */ (function () {
         var all = this.middleware['*'];
         // apply all '*' to each method
         // todo: do this for every possible verb
+        // go through each verb
         Object.keys(this.middleware).forEach(function (verb) {
             if (verb === '*')
                 return;
             var middlewares = _this.middleware[verb];
-            Object.keys(middlewares).forEach(function (url) {
-                (_a = middlewares[url]).push.apply(_a, all[url]);
+            // go through each url on the middleware 
+            Object.keys(all).forEach(function (url) {
+                if (url in middlewares)
+                    (_a = middlewares[url]).push.apply(_a, all[url]);
+                else
+                    middlewares[url] = all[url].slice();
                 var _a;
             });
         });
+        // d('parsed round 1', this.middleware);
         d('verbs handled');
-        // put all wildcard urls on the end of each url
-        // todo: make sure this isn't repeated
+        // append wildcards to each url
         Object.keys(this.middleware).forEach(function (verb) {
             var mwStack = _this.middleware[verb];
             var wildcard = mwStack['*'];
@@ -104,16 +119,19 @@ var Server = /** @class */ (function () {
                 if (url === '*')
                     return;
                 var curStack = mwStack[url];
-                curStack.push.apply(curStack, wildcard);
-                mwStack[url] = curStack.sort(function (mw1, mw2) {
+                if (wildcard)
+                    curStack.push.apply(curStack, wildcard);
+                curStack = curStack.sort(function (mw1, mw2) {
                     if (mw1.idx < mw2.idx)
                         return -1;
-                    if (mw2.idx > mw2.idx)
+                    if (mw1.idx > mw2.idx)
                         return 1;
                     return 0;
                 });
             });
         });
+        d('wildcards handled');
+        // d('parsed round 2', this.middleware);
         d('middleware prepped');
     };
     // todo: figure out how to do next() properly
@@ -129,7 +147,7 @@ var Server = /** @class */ (function () {
             return res.send("unable to " + method + " on " + url + "!");
         var middleware = middlewares[0];
         // invoke the middleware!
-        middleware.func(req, res); // , () => middleware.link.func(req, res, middleware.link.next));
+        middleware.func(req, res, res.getNext());
     };
     Server.prototype.add = function (method, url, middleware) {
         if (typeof url === 'string' && middleware)

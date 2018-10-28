@@ -6,6 +6,20 @@ import Response from './Response';
 export interface VerbMiddleware {
     [key: string]: FunctionConstructor;
 }
+export interface Middleware {
+    func: Function;
+    idx: Number;
+}
+export interface IRequest {
+    url: string | undefined;
+    headers: http.IncomingHttpHeaders;
+    method?: string;
+    code: number | undefined;
+    query: string | null;
+    pathname?: string;
+    payload?: object;
+    urlMws: Middleware[];
+}
 export interface ServerMiddleware {
     [key: string]: Function | Object;
     GET: VerbMiddleware | Object;
@@ -32,7 +46,7 @@ declare class Server {
     use: Function;
     constructor(port: number, useSSL?: boolean, cert?: string, key?: string);
     listener(req: http.IncomingMessage, res: http.ServerResponse): void;
-    static parseRequest(req: http.IncomingMessage): Promise<Request>;
+    parseRequest(req: http.IncomingMessage): Promise<Request>;
     /**
      * @param cb Callback function to run when server is running
      */

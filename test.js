@@ -17,10 +17,13 @@ const server = serv.createServer({
 // todo: move to queue - change middlewares[verb]['*'] to Middleware[]
 .get('/', (req, res, next) => {
   delete req._req;
-  res.json(req);
+  console.log(next());
+  // res.json(req);
 })
+// .use((req, res, next) => next())
 .use((req, res) => res.send('oi'))
 .get('/json', (req, res) => res.json({ a:1 }))
+.get('/test', (req, res) => res.end())
 .get('/file', (req, res) => res.sendFile('./package.json'))
 .post('/', (req, res) => res.send('oi'))
 .use('*', (req, res, next) => {

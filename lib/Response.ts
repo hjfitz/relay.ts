@@ -1,17 +1,29 @@
 import http from 'http';
 import debug from 'debug';
 import fs from 'fs';
+import Request from './Request';
+import { Middleware } from './Server';
 
 const d = debug('server:Response');
 
 export default class Response {
   _res: http.ServerResponse;
+  _req: Request;
+  stack: Middleware[];
 
-  constructor(resp: http.ServerResponse) {
+  constructor(resp: http.ServerResponse, req: Request, middleware: Middleware[]) {
     this._res = resp;
+    this._req = req;
+    this.stack = middleware;
     // default to plaintext response
     this._res.setHeader('content-type', 'text/plain');
     this._res.setHeader('Set-Cookie', ['set-by=ts-server', 'something-else=wasp']);
+  }
+
+  getNext() {
+    d('getting next mw');
+    console.log(this.stack);
+    return () => this.stack.shift().func(this._req, this, () => this.getNext());
   }
 
   /**

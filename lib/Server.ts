@@ -3,7 +3,7 @@ import https from 'https';
 import { parse } from 'url';
 import debug from 'debug';
 
-import Request, { IRequest } from './Request';
+import Request from './Request';
 import Response from './Response';
 import { noop } from './util';
 
@@ -13,10 +13,20 @@ export interface VerbMiddleware {
   [key: string]: FunctionConstructor;
 }
 
-interface Middleware {
+export interface Middleware {
   func: Function;
-  next: Function;
   idx: Number;
+}
+
+export interface IRequest {
+  url: string | undefined;
+  headers: http.IncomingHttpHeaders;
+  method?: string;
+  code: number | undefined;
+  query: string | null;
+  pathname?: string; 
+  payload?: object;
+  urlMws: Middleware[];
 }
 
 export interface ServerMiddleware {
@@ -81,16 +91,23 @@ class Server {
   listener(req: http.IncomingMessage, res: http.ServerResponse): void {
     d('connection to server made');
     // firstly, parse the request and response - make it a little more express-like
-    Server.parseRequest(req).then((parsedReq: Request) => {
+    this.parseRequest(req).then((parsedReq: Request) => {
+      const { method, pathname } = parsedReq;
+          // default to GET if no method
+      const mws = this.middleware[method || 'GET'];
+      const urlMws = mws[pathname || '*'];
+
+      console.log({ urlMws });
       d('Response and request parsed');
-      const parsedRes: Response = new Response(res);
+      const parsedRes: Response = new Response(res, parsedReq, urlMws);
       // go through each middleware, check and fire off
       // eventualy add a queue
       this.handleRequest(parsedReq, parsedRes);
     });
   }
-
-  static parseRequest(req: http.IncomingMessage): Promise<Request> {
+  
+  // todo: add stack to req
+  parseRequest(req: http.IncomingMessage): Promise<Request> {
 
       // need to parse to METHOD & path at minimum
     req.on('close', () => console.log('//todo')); // to remove from queue
@@ -98,10 +115,17 @@ class Server {
       // get what we're interested from the pure request
     const { url, headers, method, statusCode: code } = req;
     const { query, pathname } = parse(url || '');
-    d(parse(url || ''));
+    d('url parsed: ', pathname);
+
+    // default to GET if no method
+    const mws = this.middleware[method || 'GET'];
+    const urlMws = mws[pathname || '*'];
+
+    // console.log({ urlMws });
+
 
       // create request object
-    const requestOpts: IRequest = { url, headers, method, code, query, pathname };
+    const requestOpts: IRequest = { url, headers, method, code, query, pathname, urlMws };
     const parsedRequest = new Request(requestOpts, req);
 
       // attempt to parse incoming data
@@ -132,32 +156,39 @@ class Server {
   prepareMiddleware(): void {
     d('preparing midleware');
     const all = this.middleware['*'];
+
     // apply all '*' to each method
     // todo: do this for every possible verb
+    // go through each verb
     Object.keys(this.middleware).forEach((verb: string) => {
       if (verb === '*') return;
       const middlewares = this.middleware[verb];
-      Object.keys(middlewares).forEach((url: string) => {
-        middlewares[url].push(...all[url]);
+      // go through each url on the middleware 
+      Object.keys(all).forEach((url: string) => {
+        if (url in middlewares) middlewares[url].push(...all[url]);
+        else middlewares[url] = [...all[url]];
       });
-    });
+    }); 
+    // d('parsed round 1', this.middleware);
     d('verbs handled');
-    // put all wildcard urls on the end of each url
-    // todo: make sure this isn't repeated
+
+    // append wildcards to each url
     Object.keys(this.middleware).forEach((verb: string) => {
       const mwStack = this.middleware[verb];
       const wildcard = mwStack['*'];
       Object.keys(mwStack).forEach((url: string) => {
         if (url === '*') return;
-        const curStack = mwStack[url];
-        curStack.push(...wildcard);
-        mwStack[url] = curStack.sort((mw1, mw2) => {
+        let curStack = mwStack[url];
+        if (wildcard) curStack.push(...wildcard);
+        curStack = curStack.sort((mw1: Middleware, mw2: Middleware) => {
           if (mw1.idx < mw2.idx) return -1;
-          if (mw2.idx > mw2.idx) return 1;
+          if (mw1.idx > mw2.idx) return 1;
           return 0;
         });
       });
     });
+    d('wildcards handled');
+    // d('parsed round 2', this.middleware);
     d('middleware prepped');
   }
 
@@ -177,7 +208,7 @@ class Server {
     const middleware: Middleware = middlewares[0];
 
     // invoke the middleware!
-    middleware.func(req, res); // , () => middleware.link.func(req, res, middleware.link.next));
+    middleware.func(req, res, res.getNext());
   }
 
   private add(method: string, url: string|Function, middleware?: Function): Server {

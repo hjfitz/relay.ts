@@ -1,8 +1,13 @@
 /// <reference types="node" />
 import http from 'http';
+import Request from './Request';
+import { Middleware } from './Server';
 export default class Response {
     _res: http.ServerResponse;
-    constructor(resp: http.ServerResponse);
+    _req: Request;
+    stack: Middleware[];
+    constructor(resp: http.ServerResponse, req: Request, middleware: Middleware[]);
+    getNext(): () => any;
     /**
      * Send some data, and once it's flushed - end the connection
      * @param payload a string of data to send

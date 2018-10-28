@@ -4,19 +4,10 @@ import querystring from 'querystring';
 import clone from 'lodash/clone';
 
 import * as util from './util';
+import { IRequest, Middleware } from './Server';
 
 
 const d = debug('server:Request');
-
-export interface IRequest {
-  url: string | undefined;
-  headers: http.IncomingHttpHeaders;
-  method?: string;
-  code: number | undefined;
-  query: string | null;
-  pathname?: string; 
-  payload?: object;
-}
 
 export default class Request {
   _req: http.IncomingMessage;
@@ -27,6 +18,7 @@ export default class Request {
   query: object;
   pathname: string;
   payload?: object | string;
+  middlewares: Middleware[];
   private _cookies: string[];
 
   constructor(options: IRequest, pure: http.IncomingMessage) {
@@ -38,6 +30,7 @@ export default class Request {
     this.pathname = options.pathname || '/';
     this._req = pure;
     this._cookies = pure.rawHeaders;
+    this.middlewares = options.urlMws;
 
     d(`Request made to ${this.url}`);
   }
@@ -94,5 +87,9 @@ export default class Request {
       d('defaulting parse! keeping raw data');
       this.payload = body || '';
     }
+  }
+
+  getNext() {
+    return () => {};
   }
 }

@@ -1,14 +1,6 @@
 /// <reference types="node" />
 import http from 'http';
-export interface IRequest {
-    url: string | undefined;
-    headers: http.IncomingHttpHeaders;
-    method?: string;
-    code: number | undefined;
-    query: string | null;
-    pathname?: string;
-    payload?: object;
-}
+import { IRequest, Middleware } from './Server';
 export default class Request {
     _req: http.IncomingMessage;
     url: string;
@@ -18,9 +10,11 @@ export default class Request {
     query: object;
     pathname: string;
     payload?: object | string;
+    middlewares: Middleware[];
     private _cookies;
     constructor(options: IRequest, pure: http.IncomingMessage);
     static parseQuery(query?: string): object;
     handleIncomingStream(type?: string): Promise<Request>;
     parseData(body: string, type?: string): void;
+    getNext(): () => void;
 }

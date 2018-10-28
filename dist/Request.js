@@ -24,6 +24,7 @@ var Request = /** @class */ (function () {
         this.pathname = options.pathname || '/';
         this._req = pure;
         this._cookies = pure.rawHeaders;
+        this.middlewares = options.urlMws;
         d("Request made to " + this.url);
     }
     Request.parseQuery = function (query) {
@@ -85,6 +86,9 @@ var Request = /** @class */ (function () {
             d('defaulting parse! keeping raw data');
             this.payload = body || '';
         }
+    };
+    Request.prototype.getNext = function () {
+        return function () { };
     };
     return Request;
 }());

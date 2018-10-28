@@ -7,12 +7,20 @@ var debug_1 = __importDefault(require("debug"));
 var fs_1 = __importDefault(require("fs"));
 var d = debug_1.default('server:Response');
 var Response = /** @class */ (function () {
-    function Response(resp) {
+    function Response(resp, req, middleware) {
         this._res = resp;
+        this._req = req;
+        this.stack = middleware;
         // default to plaintext response
         this._res.setHeader('content-type', 'text/plain');
         this._res.setHeader('Set-Cookie', ['set-by=ts-server', 'something-else=wasp']);
     }
+    Response.prototype.getNext = function () {
+        var _this = this;
+        d('getting next mw');
+        console.log(this.stack);
+        return function () { return _this.stack.shift().func(_this._req, _this, function () { return _this.getNext(); }); };
+    };
     /**
      * Send some data, and once it's flushed - end the connection
      * @param payload a string of data to send
