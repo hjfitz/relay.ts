@@ -26,7 +26,6 @@ export interface IRequest {
   query: string | null;
   pathname?: string; 
   payload?: object;
-  urlMws: Middleware[];
 }
 
 export interface ServerMiddleware {
@@ -93,16 +92,18 @@ class Server {
     // firstly, parse the request and response - make it a little more express-like
     this.parseRequest(req).then((parsedReq: Request) => {
       const { method, pathname } = parsedReq;
-          // default to GET if no method
+      // default to GET if no method
       const mws = this.middleware[method || 'GET'];
-      const urlMws = mws[pathname || '*'];
+      const urlMws = [...mws[pathname || '*'] || mws['*']];
 
-      console.log({ urlMws });
-      d('Response and request parsed');
+      // first funciton is used immediately
+      const { func }: {func: Function} = urlMws.shift();
+
+
       const parsedRes: Response = new Response(res, parsedReq, urlMws);
-      // go through each middleware, check and fire off
-      // eventualy add a queue
-      this.handleRequest(parsedReq, parsedRes);
+      d('Response and request parsed');
+      
+      func(parsedReq, parsedRes, parsedRes.getNext);
     });
   }
   
@@ -117,15 +118,8 @@ class Server {
     const { query, pathname } = parse(url || '');
     d('url parsed: ', pathname);
 
-    // default to GET if no method
-    const mws = this.middleware[method || 'GET'];
-    const urlMws = mws[pathname || '*'];
-
-    // console.log({ urlMws });
-
-
       // create request object
-    const requestOpts: IRequest = { url, headers, method, code, query, pathname, urlMws };
+    const requestOpts: IRequest = { url, headers, method, code, query, pathname };
     const parsedRequest = new Request(requestOpts, req);
 
       // attempt to parse incoming data
@@ -190,25 +184,6 @@ class Server {
     d('wildcards handled');
     // d('parsed round 2', this.middleware);
     d('middleware prepped');
-  }
-
-  // todo: figure out how to do next() properly
-  handleRequest(req: Request, res: Response): void {
-    const { method, url }: { method: string | undefined, url: string | undefined } = req;
-    
-    d(`method: ${method}, url: ${url}`);
-    
-    // this should never happen
-    if (!method || !url) return res.send('no method!');
-
-    const middlewares: Middleware[] = this.middleware[method][url];
-    // nothing? let the user know, and close the connection
-    if (!middlewares) return res.send(`unable to ${method} on ${url}!`);
-    
-    const middleware: Middleware = middlewares[0];
-
-    // invoke the middleware!
-    middleware.func(req, res, res.getNext());
   }
 
   private add(method: string, url: string|Function, middleware?: Function): Server {

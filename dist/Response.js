@@ -10,16 +10,22 @@ var Response = /** @class */ (function () {
     function Response(resp, req, middleware) {
         this._res = resp;
         this._req = req;
-        this.stack = middleware;
+        this.queue = middleware.slice();
+        console.log({ middleware: middleware });
         // default to plaintext response
         this._res.setHeader('content-type', 'text/plain');
         this._res.setHeader('Set-Cookie', ['set-by=ts-server', 'something-else=wasp']);
+        this.getNext = this.getNext.bind(this);
     }
     Response.prototype.getNext = function () {
-        var _this = this;
         d('getting next mw');
-        console.log(this.stack);
-        return function () { return _this.stack.shift().func(_this._req, _this, function () { return _this.getNext(); }); };
+        d('queue');
+        console.log(this.queue);
+        if (!this.queue.length)
+            return this.send("unable to " + this._req.method + " on " + this._req.url);
+        var next = this.queue.shift();
+        if (next)
+            return next.func(this._req, this, this.getNext);
     };
     /**
      * Send some data, and once it's flushed - end the connection
@@ -29,9 +35,9 @@ var Response = /** @class */ (function () {
     Response.prototype.send = function (payload, encoding) {
         var _this = this;
         if (encoding === void 0) { encoding = 'utf8'; }
-        d('sending raw data');
+        d('sending raw data', payload);
         this._res.write(payload, encoding, function () {
-            _this._res.end();
+            _this._res.end('\n');
         });
     };
     /**

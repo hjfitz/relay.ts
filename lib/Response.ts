@@ -9,21 +9,26 @@ const d = debug('server:Response');
 export default class Response {
   _res: http.ServerResponse;
   _req: Request;
-  stack: Middleware[];
+  queue: Middleware[];
 
   constructor(resp: http.ServerResponse, req: Request, middleware: Middleware[]) {
     this._res = resp;
     this._req = req;
-    this.stack = middleware;
+    this.queue = [...middleware];
+    console.log({ middleware });
     // default to plaintext response
     this._res.setHeader('content-type', 'text/plain');
     this._res.setHeader('Set-Cookie', ['set-by=ts-server', 'something-else=wasp']);
+    this.getNext = this.getNext.bind(this);
   }
 
   getNext() {
     d('getting next mw');
-    console.log(this.stack);
-    return () => this.stack.shift().func(this._req, this, () => this.getNext());
+    d('queue');
+    console.log(this.queue);
+    if (!this.queue.length) return this.send(`unable to ${this._req.method} on ${this._req.url}`);
+    const next = this.queue.shift();
+    if (next) return next.func(this._req, this, this.getNext);
   }
 
   /**
@@ -32,9 +37,9 @@ export default class Response {
    * @param encoding encoding to use
    */
   send(payload: string, encoding: string = 'utf8'): void {
-    d('sending raw data');
+    d('sending raw data', payload);
     this._res.write(payload, encoding, () => {
-      this._res.end();
+      this._res.end('\n');
     });
   }
 

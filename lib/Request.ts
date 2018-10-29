@@ -18,7 +18,6 @@ export default class Request {
   query: object;
   pathname: string;
   payload?: object | string;
-  middlewares: Middleware[];
   private _cookies: string[];
 
   constructor(options: IRequest, pure: http.IncomingMessage) {
@@ -30,7 +29,6 @@ export default class Request {
     this.pathname = options.pathname || '/';
     this._req = pure;
     this._cookies = pure.rawHeaders;
-    this.middlewares = options.urlMws;
 
     d(`Request made to ${this.url}`);
   }
@@ -87,9 +85,5 @@ export default class Request {
       d('defaulting parse! keeping raw data');
       this.payload = body || '';
     }
-  }
-
-  getNext() {
-    return () => {};
   }
 }

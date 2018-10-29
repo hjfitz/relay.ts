@@ -2,7 +2,6 @@
 import http from 'http';
 import https from 'https';
 import Request from './Request';
-import Response from './Response';
 export interface VerbMiddleware {
     [key: string]: FunctionConstructor;
 }
@@ -18,7 +17,6 @@ export interface IRequest {
     query: string | null;
     pathname?: string;
     payload?: object;
-    urlMws: Middleware[];
 }
 export interface ServerMiddleware {
     [key: string]: Function | Object;
@@ -56,7 +54,6 @@ declare class Server {
      * doing this on init means that lookups are o(1)
      */
     prepareMiddleware(): void;
-    handleRequest(req: Request, res: Response): void;
     private add(method, url, middleware?);
     private addMw(method, url, middleware);
 }

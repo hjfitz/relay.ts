@@ -42,13 +42,12 @@ var Server = /** @class */ (function () {
             var method = parsedReq.method, pathname = parsedReq.pathname;
             // default to GET if no method
             var mws = _this.middleware[method || 'GET'];
-            var urlMws = mws[pathname || '*'];
-            console.log({ urlMws: urlMws });
-            d('Response and request parsed');
+            var urlMws = (mws[pathname || '*'] || mws['*']).slice();
+            // first funciton is used immediately
+            var func = urlMws.shift().func;
             var parsedRes = new Response_1.default(res, parsedReq, urlMws);
-            // go through each middleware, check and fire off
-            // eventualy add a queue
-            _this.handleRequest(parsedReq, parsedRes);
+            d('Response and request parsed');
+            func(parsedReq, parsedRes, parsedRes.getNext);
         });
     };
     // todo: add stack to req
@@ -59,12 +58,8 @@ var Server = /** @class */ (function () {
         var url = req.url, headers = req.headers, method = req.method, code = req.statusCode;
         var _a = url_1.parse(url || ''), query = _a.query, pathname = _a.pathname;
         d('url parsed: ', pathname);
-        // default to GET if no method
-        var mws = this.middleware[method || 'GET'];
-        var urlMws = mws[pathname || '*'];
-        // console.log({ urlMws });
         // create request object
-        var requestOpts = { url: url, headers: headers, method: method, code: code, query: query, pathname: pathname, urlMws: urlMws };
+        var requestOpts = { url: url, headers: headers, method: method, code: code, query: query, pathname: pathname };
         var parsedRequest = new Request_1.default(requestOpts, req);
         // attempt to parse incoming data
         var contentType = headers['content-type'];
@@ -133,21 +128,6 @@ var Server = /** @class */ (function () {
         d('wildcards handled');
         // d('parsed round 2', this.middleware);
         d('middleware prepped');
-    };
-    // todo: figure out how to do next() properly
-    Server.prototype.handleRequest = function (req, res) {
-        var method = req.method, url = req.url;
-        d("method: " + method + ", url: " + url);
-        // this should never happen
-        if (!method || !url)
-            return res.send('no method!');
-        var middlewares = this.middleware[method][url];
-        // nothing? let the user know, and close the connection
-        if (!middlewares)
-            return res.send("unable to " + method + " on " + url + "!");
-        var middleware = middlewares[0];
-        // invoke the middleware!
-        middleware.func(req, res, res.getNext());
     };
     Server.prototype.add = function (method, url, middleware) {
         if (typeof url === 'string' && middleware)

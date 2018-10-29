@@ -5,9 +5,9 @@ import { Middleware } from './Server';
 export default class Response {
     _res: http.ServerResponse;
     _req: Request;
-    stack: Middleware[];
+    queue: Middleware[];
     constructor(resp: http.ServerResponse, req: Request, middleware: Middleware[]);
-    getNext(): () => any;
+    getNext(): any;
     /**
      * Send some data, and once it's flushed - end the connection
      * @param payload a string of data to send
