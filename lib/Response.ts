@@ -15,7 +15,6 @@ export default class Response {
     this._res = resp;
     this._req = req;
     this.queue = [...middleware];
-    console.log({ middleware });
     // default to plaintext response
     this._res.setHeader('content-type', 'text/plain');
     this._res.setHeader('Set-Cookie', ['set-by=ts-server', 'something-else=wasp']);
@@ -23,9 +22,8 @@ export default class Response {
   }
 
   getNext() {
-    d('getting next mw');
-    d('queue');
-    console.log(this.queue);
+    d('Returning next middleware for ', this._req.url);
+    d({ queue: this.queue }, 'for', this._req.url);
     if (!this.queue.length) return this.send(`unable to ${this._req.method} on ${this._req.url}`);
     const next = this.queue.shift();
     if (next) return next.func(this._req, this, this.getNext);

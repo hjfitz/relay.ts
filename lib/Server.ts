@@ -6,6 +6,7 @@ import debug from 'debug';
 import Request from './Request';
 import Response from './Response';
 import { noop } from './util';
+import { resolve } from 'dns';
 
 const d = debug('server:Server');
 
@@ -47,18 +48,17 @@ interface ServerResponse {
 
 class Server {
 
-  _server: https.Server | http.Server;
-  mwCount: number;
-  middleware: any;
-  port: number;
+  private mwCount: number;
+  private _server: https.Server | http.Server;
+  private middleware: any;
+  private port: number;
+  private verbs: string[];
   all: Function;
   get: Function; 
   head: Function;
   patch: Function ;
   options: Function; 
-  connect: Function;
   delete: Function;
-  trace: Function;
   post: Function;
   put: Function;
   use: Function;
@@ -70,9 +70,9 @@ class Server {
     // instantiate a http(s) server
     this._server = http.createServer(this.listener);
     if (useSSL) this._server = https.createServer({ key, cert }, this.listener);
-    
-    // this.middleware = { GET: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
-    this.middleware = {};
+        
+    this.middleware = { GET: {}, HEAD: {}, OPTIONS: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
+    this.verbs = Object.keys(this.middleware);
 
     this.all = this.add.bind(this, '*');
     this.use = this.add.bind(this, '*');
@@ -80,11 +80,22 @@ class Server {
     this.head = this.add.bind(this, 'HEAD');
     this.patch = this.add.bind(this, 'PATCH');
     this.options = this.add.bind(this, 'OPTIONS');
-    this.connect = this.add.bind(this, 'CONNECT');
     this.delete = this.add.bind(this, 'DELETE');
-    this.trace = this.add.bind(this, 'TRACE');
     this.post = this.add.bind(this, 'POST');
     this.put = this.add.bind(this, 'PUT');
+  }
+
+    /**
+   * @param cb Callback function to run when server is running
+   */
+  init(cb?: Function): Promise<Server> {
+    this.prepareMiddleware();
+    return new Promise((resolve: Function) => {
+      this._server.listen(this.port, () => {
+        if (cb) cb();
+        resolve(this);
+      });
+    });
   }
 
   listener(req: http.IncomingMessage, res: http.ServerResponse): void {
@@ -131,29 +142,15 @@ class Server {
     return parsedRequest.handleIncomingStream(contentType);
   }
 
-
   /**
-   * @param cb Callback function to run when server is running
-   */
-  init(cb?: Function): Server {
-    this.prepareMiddleware();
-    this._server.listen(this.port, () => {
-      if (cb) cb();
-    });
-    return this;
-  }
-
-  /**
-   * go through each middleware, and add a next(), pointing to next function on that verb
-   * doing this on init means that lookups are o(1)
+   * clean this the fuck up
    */
   prepareMiddleware(): void {
     d('preparing midleware');
     const all = this.middleware['*'];
 
     // apply all '*' to each method
-    // todo: do this for every possible verb
-    // go through each verb
+    // go through each verb we currently have
     Object.keys(this.middleware).forEach((verb: string) => {
       if (verb === '*') return;
       const middlewares = this.middleware[verb];
@@ -182,7 +179,6 @@ class Server {
       });
     });
     d('wildcards handled');
-    // d('parsed round 2', this.middleware);
     d('middleware prepped');
   }
 

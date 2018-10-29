@@ -50,8 +50,7 @@ const server: Server = serv.createServer({
 - [x] HTTP Verbs
 - [x] query param parsing
 - [x] next()
-- [ ] `use` middleware
+- [x] `use` middleware
 - [ ] Static files
 - [ ] cookie parsing - { credentials: 'include' }
 - [ ] Compression (gzip + ???)
-- [ ] sessions (consider binning this)

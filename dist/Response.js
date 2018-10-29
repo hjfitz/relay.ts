@@ -11,16 +11,14 @@ var Response = /** @class */ (function () {
         this._res = resp;
         this._req = req;
         this.queue = middleware.slice();
-        console.log({ middleware: middleware });
         // default to plaintext response
         this._res.setHeader('content-type', 'text/plain');
         this._res.setHeader('Set-Cookie', ['set-by=ts-server', 'something-else=wasp']);
         this.getNext = this.getNext.bind(this);
     }
     Response.prototype.getNext = function () {
-        d('getting next mw');
-        d('queue');
-        console.log(this.queue);
+        d('Returning next middleware for ', this._req.url);
+        d({ queue: this.queue }, 'for', this._req.url);
         if (!this.queue.length)
             return this.send("unable to " + this._req.method + " on " + this._req.url);
         var next = this.queue.shift();
@@ -87,3 +85,4 @@ var Response = /** @class */ (function () {
     return Response;
 }());
 exports.default = Response;
+//# sourceMappingURL=Response.js.map

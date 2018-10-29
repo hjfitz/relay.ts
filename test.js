@@ -1,37 +1,38 @@
-const serv = require('./dist');
+const clone = require('./dist');
 
 const port = 8888;
 
-const server = serv.createServer({
-  port,
-  plugins: [
-    'body-parser', 
-    'compression', 
-    'cookie-parser', 
-    'session',
-    'logger',
-  ],
-  static: [{ dir: '/lib', on: '/mounted' }]
-})
-.use('/oioi', (req, res) => res.send('oi'))
-// todo: move to queue - change middlewares[verb]['*'] to Middleware[]
-.get('/', (req, res, next) => {
+const app = clone.createServer({ port });
+
+app.use('/oioi', (req, res) => res.send('oi'))
+
+app.get('/', (req, res, next) => {
   console.log('oi')
-  console.log(next());
-  // res.json(req);
+  // console.log(next());
+  res.json({ oi: 'oi'});
 })
-.use((req, res, next) => next())
-// .use((req, res) => res.send('its a me'))
-.get('/json', (req, res) => res.json({ a:1 }))
-.get('/test', (req, res) => res.end())
-.get('/file', (req, res) => res.sendFile('./package.json'))
-.post('/', (req, res) => res.send('oi'))
-.use((req, res, next) => {
-  console.log('this shit invoked?');
+
+app.use((req, res, next) => {
+  console.log('second')
   next();
+})
+
+app.get('/json', (req, res) => res.json({ a:1 }))
+
+app.get('/test', (req, res) => res.end())
+
+app.get('/file', (req, res) => res.sendFile('./package.json'))
+
+app.post('/', (req, res) => res.send('oi'))
+
+app.use('/', (req, res, next) => {
+  console.log('this shit invoked?');
+  // next();
   res.send('last');
 })
-.use('/json', (req, res) => res.json({ a: 2}))
-  .init(() => console.log('listening on', port));
+
+app.use('/json', (req, res) => res.json({ a: 2}))
+
+app.init().then(() => console.log('listening on', port));
 
   

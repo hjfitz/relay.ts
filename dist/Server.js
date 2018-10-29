@@ -20,20 +20,32 @@ var Server = /** @class */ (function () {
         this._server = http_1.default.createServer(this.listener);
         if (useSSL)
             this._server = https_1.default.createServer({ key: key, cert: cert }, this.listener);
-        // this.middleware = { GET: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
-        this.middleware = {};
+        this.middleware = { GET: {}, HEAD: {}, OPTIONS: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
+        this.verbs = Object.keys(this.middleware);
         this.all = this.add.bind(this, '*');
         this.use = this.add.bind(this, '*');
         this.get = this.add.bind(this, 'GET');
         this.head = this.add.bind(this, 'HEAD');
         this.patch = this.add.bind(this, 'PATCH');
         this.options = this.add.bind(this, 'OPTIONS');
-        this.connect = this.add.bind(this, 'CONNECT');
         this.delete = this.add.bind(this, 'DELETE');
-        this.trace = this.add.bind(this, 'TRACE');
         this.post = this.add.bind(this, 'POST');
         this.put = this.add.bind(this, 'PUT');
     }
+    /**
+   * @param cb Callback function to run when server is running
+   */
+    Server.prototype.init = function (cb) {
+        var _this = this;
+        this.prepareMiddleware();
+        return new Promise(function (resolve) {
+            _this._server.listen(_this.port, function () {
+                if (cb)
+                    cb();
+                resolve(_this);
+            });
+        });
+    };
     Server.prototype.listener = function (req, res) {
         var _this = this;
         d('connection to server made');
@@ -70,27 +82,14 @@ var Server = /** @class */ (function () {
         return parsedRequest.handleIncomingStream(contentType);
     };
     /**
-     * @param cb Callback function to run when server is running
-     */
-    Server.prototype.init = function (cb) {
-        this.prepareMiddleware();
-        this._server.listen(this.port, function () {
-            if (cb)
-                cb();
-        });
-        return this;
-    };
-    /**
-     * go through each middleware, and add a next(), pointing to next function on that verb
-     * doing this on init means that lookups are o(1)
+     * clean this the fuck up
      */
     Server.prototype.prepareMiddleware = function () {
         var _this = this;
         d('preparing midleware');
         var all = this.middleware['*'];
         // apply all '*' to each method
-        // todo: do this for every possible verb
-        // go through each verb
+        // go through each verb we currently have
         Object.keys(this.middleware).forEach(function (verb) {
             if (verb === '*')
                 return;
@@ -126,7 +125,6 @@ var Server = /** @class */ (function () {
             });
         });
         d('wildcards handled');
-        // d('parsed round 2', this.middleware);
         d('middleware prepped');
     };
     Server.prototype.add = function (method, url, middleware) {
@@ -151,3 +149,4 @@ var Server = /** @class */ (function () {
     return Server;
 }());
 exports.default = Server;
+//# sourceMappingURL=Server.js.map

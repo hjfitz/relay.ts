@@ -1,6 +1,5 @@
 /// <reference types="node" />
 import http from 'http';
-import https from 'https';
 import Request from './Request';
 export interface VerbMiddleware {
     [key: string]: FunctionConstructor;
@@ -27,31 +26,29 @@ export interface ServerMiddleware {
     DELETE: VerbMiddleware | Object;
 }
 declare class Server {
-    _server: https.Server | http.Server;
-    mwCount: number;
-    middleware: any;
-    port: number;
+    private mwCount;
+    private _server;
+    private middleware;
+    private port;
+    private verbs;
     all: Function;
     get: Function;
     head: Function;
     patch: Function;
     options: Function;
-    connect: Function;
     delete: Function;
-    trace: Function;
     post: Function;
     put: Function;
     use: Function;
     constructor(port: number, useSSL?: boolean, cert?: string, key?: string);
+    /**
+   * @param cb Callback function to run when server is running
+   */
+    init(cb?: Function): Promise<Server>;
     listener(req: http.IncomingMessage, res: http.ServerResponse): void;
     parseRequest(req: http.IncomingMessage): Promise<Request>;
     /**
-     * @param cb Callback function to run when server is running
-     */
-    init(cb?: Function): Server;
-    /**
-     * go through each middleware, and add a next(), pointing to next function on that verb
-     * doing this on init means that lookups are o(1)
+     * clean this the fuck up
      */
     prepareMiddleware(): void;
     private add(method, url, middleware?);
