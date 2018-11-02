@@ -5,54 +5,19 @@ import debug from 'debug';
 
 import Request from './Request';
 import Response from './Response';
-import { noop } from './util';
-import { resolve } from 'dns';
 
-const d = debug('server:Server');
-
-export interface VerbMiddleware {
-  [key: string]: FunctionConstructor;
-}
+const d = debug('relay:Server');
 
 export interface Middleware {
   func: Function;
   idx: Number;
 }
 
-export interface IRequest {
-  url: string | undefined;
-  headers: http.IncomingHttpHeaders;
-  method?: string;
-  code: number | undefined;
-  query: string | null;
-  pathname?: string; 
-  payload?: object;
-}
-
-export interface ServerMiddleware {
-  [key: string]: Function | Object;
-  GET: VerbMiddleware | Object;
-  POST: VerbMiddleware | Object;
-  PUT: VerbMiddleware | Object;
-  PATCH: VerbMiddleware | Object;
-  DELETE: VerbMiddleware | Object;
-}
-
-interface ServerResponse {
-  json: Promise<{}>;
-  send: Promise<Function>;
-  sendFile: Promise<Function>;
-  sendStatus: Function;
-  end: Function;
-}
-
 class Server {
-
   private mwCount: number;
   private _server: https.Server | http.Server;
   private middleware: any;
   private port: number;
-  private verbs: string[];
   all: Function;
   get: Function; 
   head: Function;
@@ -72,7 +37,6 @@ class Server {
     if (useSSL) this._server = https.createServer({ key, cert }, this.listener);
         
     this.middleware = { GET: {}, HEAD: {}, OPTIONS: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
-    this.verbs = Object.keys(this.middleware);
 
     this.all = this.add.bind(this, '*');
     this.use = this.add.bind(this, '*');
@@ -98,54 +62,62 @@ class Server {
     });
   }
 
-  listener(req: http.IncomingMessage, res: http.ServerResponse): void {
-    d('connection to server made');
+  private listener(req: http.IncomingMessage, res: http.ServerResponse): void {
+    d('===BEGINNING PARSE===')
     // firstly, parse the request and response - make it a little more express-like
     this.parseRequest(req).then((parsedReq: Request) => {
-      const { method, pathname } = parsedReq;
+      const { method, url } = parsedReq;
       // default to GET if no method
       const mws = this.middleware[method || 'GET'];
-      const urlMws = [...mws[pathname || '*'] || mws['*']];
+      const urlMws = [...mws[url || '*'] || mws['*']];
+
+      d(`queue size for ${url}: ${urlMws.length}`);
 
       // first funciton is used immediately
       const { func }: {func: Function} = urlMws.shift();
 
-
       const parsedRes: Response = new Response(res, parsedReq, urlMws);
-      d('Response and request parsed');
+      d('Request and Response parsed');
       
       func(parsedReq, parsedRes, parsedRes.getNext);
+      d('===END PARSE===');
     });
   }
   
   // todo: add stack to req
-  parseRequest(req: http.IncomingMessage): Promise<Request> {
+  private parseRequest(req: http.IncomingMessage): Promise<Request> {
+    // need to parse to METHOD & path at minimum
+    // req.on('close', () => console.log('//todo'));
 
-      // need to parse to METHOD & path at minimum
-    req.on('close', () => console.log('//todo')); // to remove from queue
+    // get what we're interested from the pure request
+    const { url, headers, method, statusCode } = req;
+    const { query } = parse(url || '');
 
-      // get what we're interested from the pure request
-    const { url, headers, method, statusCode: code } = req;
-    const { query, pathname } = parse(url || '');
-    d('url parsed: ', pathname);
+    d('beginning request parse');
+    // create request object
+    const parsedRequest = new Request({ 
+      statusCode, 
+      headers, 
+      method, 
+      query, 
+      req,
+      url, 
+    });
 
-      // create request object
-    const requestOpts: IRequest = { url, headers, method, code, query, pathname };
-    const parsedRequest = new Request(requestOpts, req);
-
-      // attempt to parse incoming data
+    // attempt to parse incoming data
     const contentType = headers['content-type'];
     d(`content type: ${contentType}`);
     if (!('content-type' in headers)) return Promise.resolve(parsedRequest);
 
-      // handleIncomingStream returns itself - resolve after handling
+    d('parsing incoming stream...');
+    // handleIncomingStream returns itself - resolve after handling
     return parsedRequest.handleIncomingStream(contentType);
   }
 
   /**
    * clean this the fuck up
    */
-  prepareMiddleware(): void {
+  private prepareMiddleware(): void {
     d('preparing midleware');
     const all = this.middleware['*'];
 

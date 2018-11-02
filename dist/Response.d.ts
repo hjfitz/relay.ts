@@ -3,8 +3,8 @@ import http from 'http';
 import Request from './Request';
 import { Middleware } from './Server';
 export default class Response {
-    _res: http.ServerResponse;
-    _req: Request;
+    private _res;
+    private _req;
     queue: Middleware[];
     constructor(resp: http.ServerResponse, req: Request, middleware: Middleware[]);
     getNext(): any;

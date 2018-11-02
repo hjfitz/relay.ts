@@ -1,7 +1,7 @@
 import debug from 'debug';
 import clone from 'lodash/clone';
 
-const d = debug('Server:util');
+const d = debug('relay:util');
 
 export const noop = () => {};
 

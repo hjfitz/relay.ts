@@ -1,8 +1,8 @@
 import debug from 'debug';
-import Server from './Server';
+import Server, { Middleware } from './Server';
 import assert from 'assert';
 
-const d = debug('server:index');
+const d = debug('relay:index');
 
 
 export interface ServerOptions {
@@ -10,7 +10,7 @@ export interface ServerOptions {
   cert?: string;
   key?: string;
   plugins?: string[];
-}
+};
 
 export const createServer = (options: ServerOptions): Server => {
   d('creating server');

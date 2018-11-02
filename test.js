@@ -7,8 +7,8 @@ const app = clone.createServer({ port });
 app.use('/oioi', (req, res) => res.send('oi'))
 
 app.get('/', (req, res, next) => {
-  console.log('oi')
-  // console.log(next());
+  console.log('oi');
+  // next();
   res.json({ oi: 'oi'});
 })
 

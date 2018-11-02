@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var debug_1 = __importDefault(require("debug"));
 var clone_1 = __importDefault(require("lodash/clone"));
-var d = debug_1.default('Server:util');
+var d = debug_1.default('relay:util');
 exports.noop = function () { };
 /**
  *
@@ -33,12 +33,12 @@ function parseBoundary(type, body) {
         }
     }
     var parsed = keySplit.map(function (pair) {
+        var _a;
         var unparsedKey = pair[0], rest = pair.slice(1);
         var key = unparsedKey
             .replace('Content-Disposition: form-data; name=', '')
             .replace(/"/g, '');
         return _a = {}, _a[key] = rest.join(), _a;
-        var _a;
     }).reduce(function (acc, cur) { return Object.assign(acc, cur); }, {});
     return parsed;
 }

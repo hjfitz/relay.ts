@@ -1,13 +1,11 @@
 import http from 'http';
 import debug from 'debug';
 import querystring from 'querystring';
-import clone from 'lodash/clone';
 
 import * as util from './util';
-import { IRequest, Middleware } from './Server';
-import { access } from 'fs';
 
-const d = debug('server:Request');
+
+const d = debug('relay:Request');
 
 const parseCookies = (dough: string): Object => dough
   .split(';')
@@ -17,29 +15,35 @@ const parseCookies = (dough: string): Object => dough
   })
   .reduce((acc: Object, cur: { [x: string]: string; }) => Object.assign(acc, cur), {});
 
+interface IRequest {
+  url: string | undefined;
+  headers: http.IncomingHttpHeaders;
+  method?: string;
+  statusCode: number | undefined;
+  req: http.IncomingMessage;
+  query: string | null;
+  pathname?: string; 
+  payload?: object;
+}
 
-export default class Request {
+class Request {
   _req: http.IncomingMessage;
   url: string;
-  headers: http.IncomingHttpHeaders;
   method: string;
+  headers: http.IncomingHttpHeaders;
   code: number;
   query: object;
-  pathname: string;
   payload?: object | string;
   cookies: Object;
 
-  constructor(options: IRequest, pure: http.IncomingMessage) {
-    this.url = options.pathname || 'unknown';
+  constructor(options: IRequest) {
+    this.url = options.url || 'unknown';
     this.headers = options.headers || '';
     this.method = options.method || 'unknown';
-    this.code = options.code || 500;
+    this.code = options.statusCode || 200;
     this.query = Request.parseQuery(options.query || '');
-    this.pathname = options.pathname || '/';
-    this._req = pure;
+    this._req = options.req;
     this.cookies = parseCookies(this.headers.cookie || '');
-    d('cookies parsed:', this.cookies);
-
     d(`Request made to ${this.url}`);
   }
 
@@ -97,3 +101,5 @@ export default class Request {
     }
   }
 }
+
+export default Request;

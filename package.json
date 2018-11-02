@@ -1,6 +1,6 @@
 {
-  "name": "express-clone",
-  "version": "1.0.0",
+  "name": "relay.ts",
+  "version": "0.0.0-rc.1",
   "description": "A basic Express-esque HTTP(S) server",
   "main": "test.js",
   "repository": "https://github.com/hjfitz/express-clone",

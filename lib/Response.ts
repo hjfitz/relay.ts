@@ -4,11 +4,11 @@ import fs from 'fs';
 import Request from './Request';
 import { Middleware } from './Server';
 
-const d = debug('server:Response');
+const d = debug('relay:Response');
 
 export default class Response {
-  _res: http.ServerResponse;
-  _req: Request;
+  private _res: http.ServerResponse;
+  private _req: Request;
   queue: Middleware[];
 
   constructor(resp: http.ServerResponse, req: Request, middleware: Middleware[]) {
@@ -23,7 +23,7 @@ export default class Response {
 
   getNext() {
     d('Returning next middleware for ', this._req.url);
-    d({ queue: this.queue }, 'for', this._req.url);
+    d('queue size:', this.queue.length, 'for', this._req.url);
     if (!this.queue.length) return this.send(`unable to ${this._req.method} on ${this._req.url}`);
     const next = this.queue.shift();
     if (next) return next.func(this._req, this, this.getNext);
@@ -38,6 +38,7 @@ export default class Response {
     d('sending raw data', payload);
     this._res.write(payload, encoding, () => {
       this._res.end('\n');
+      this._req._req.connection.destroy();
     });
   }
 

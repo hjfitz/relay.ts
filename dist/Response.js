@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var debug_1 = __importDefault(require("debug"));
 var fs_1 = __importDefault(require("fs"));
-var d = debug_1.default('server:Response');
+var d = debug_1.default('relay:Response');
 var Response = /** @class */ (function () {
     function Response(resp, req, middleware) {
         this._res = resp;
@@ -18,7 +18,7 @@ var Response = /** @class */ (function () {
     }
     Response.prototype.getNext = function () {
         d('Returning next middleware for ', this._req.url);
-        d({ queue: this.queue }, 'for', this._req.url);
+        d('queue size:', this.queue.length, 'for', this._req.url);
         if (!this.queue.length)
             return this.send("unable to " + this._req.method + " on " + this._req.url);
         var next = this.queue.shift();
@@ -36,6 +36,7 @@ var Response = /** @class */ (function () {
         d('sending raw data', payload);
         this._res.write(payload, encoding, function () {
             _this._res.end('\n');
+            _this._req._req.connection.destroy();
         });
     };
     /**

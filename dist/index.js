@@ -6,7 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var debug_1 = __importDefault(require("debug"));
 var Server_1 = __importDefault(require("./Server"));
 var assert_1 = __importDefault(require("assert"));
-var d = debug_1.default('server:index');
+var d = debug_1.default('relay:index');
+;
 exports.createServer = function (options) {
     d('creating server');
     // check for options
