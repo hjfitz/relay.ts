@@ -1,6 +1,7 @@
 import http from 'http';
 import debug from 'debug';
 import fs from 'fs';
+import mime from 'mime-types';
 import Request from './Request';
 import { Middleware } from './Server';
 
@@ -34,8 +35,9 @@ export default class Response {
    * @param payload a string of data to send
    * @param encoding encoding to use
    */
-  send(payload: string, encoding: string = 'utf8'): void {
+  send(payload: string, type: string = 'text/plain', encoding: string = 'utf8'): void {
     d('sending raw data', payload);
+    this._res.writeHead(200, { 'Content-Type': type });
     this._res.write(payload, encoding, () => {
       this._res.end('\n');
       this._req._req.connection.destroy();
@@ -49,12 +51,13 @@ export default class Response {
    */
   sendFile(filename: string, encoding: string = 'utf8'): void {
     d('sending file');
-    try {
-      const contents: string = fs.readFileSync(filename, { encoding }).toString();
-      this.send(contents, encoding);
-    } catch (err) {
-      d(err);
-    }
+    d('calculating mime type');
+    const type = mime.lookup(filename);
+    d(`sending ${type}`)
+    console.log('static');
+    const contents: string = fs.readFileSync(filename, { encoding }).toString();
+    this.send(contents, type, encoding);
+
   }
 
   /**

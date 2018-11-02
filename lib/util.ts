@@ -1,5 +1,10 @@
 import debug from 'debug';
+import fs from 'fs';
+import path from 'path';
 import clone from 'lodash/clone';
+
+import Request from './Request';
+import Response from './Response';
 
 const d = debug('relay:util');
 
@@ -39,3 +44,14 @@ export function parseBoundary(type: string, body: string): object {
 
   return parsed;
 }
+
+export function useStatic(absolute: string): Function {
+  if (!fs.existsSync(absolute)) throw new Error("folder doesn't exist!");
+  return function staticFiles(req: Request, res: Response, next: Function): void {
+    const resourcePath = path.join(absolute, req.url);
+    d(`Attempting to retrieve for ${req.url}`);
+    if (!fs.existsSync(resourcePath)) return next();
+    res.sendFile(resourcePath);
+  }
+}
+

@@ -1,5 +1,5 @@
 import debug from 'debug';
-import Server, { Middleware } from './Server';
+import Server from './Server';
 import assert from 'assert';
 
 const d = debug('relay:index');
@@ -12,7 +12,8 @@ export interface ServerOptions {
   plugins?: string[];
 };
 
-export const createServer = (options: ServerOptions): Server => {
+
+export default function createServer(options: ServerOptions): Server {
   d('creating server');
   // check for options
   assert(options, 'Options missing!');
@@ -37,3 +38,5 @@ export const createServer = (options: ServerOptions): Server => {
 
   return server;
 };
+
+export { useStatic } from './util'

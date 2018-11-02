@@ -4,6 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var debug_1 = __importDefault(require("debug"));
+var fs_1 = __importDefault(require("fs"));
+var path_1 = __importDefault(require("path"));
 var clone_1 = __importDefault(require("lodash/clone"));
 var d = debug_1.default('relay:util');
 exports.noop = function () { };
@@ -43,4 +45,16 @@ function parseBoundary(type, body) {
     return parsed;
 }
 exports.parseBoundary = parseBoundary;
+function useStatic(absolute) {
+    if (!fs_1.default.existsSync(absolute))
+        throw new Error("folder doesn't exist!");
+    return function staticFiles(req, res, next) {
+        var resourcePath = path_1.default.join(absolute, req.url);
+        d("Attempting to retrieve for " + req.url);
+        if (!fs_1.default.existsSync(resourcePath))
+            return next();
+        res.sendFile(resourcePath);
+    };
+}
+exports.useStatic = useStatic;
 //# sourceMappingURL=util.js.map

@@ -36,7 +36,8 @@ yarn add ${libname}
 Then, create a server!
 
 ```ts
-import relay from 'relay';
+import path from 'path';
+import relay, { useStatic } from 'relay';
 
 const server: Server = relay.createServer({ port: 8080 });
 
@@ -44,6 +45,9 @@ const server: Server = relay.createServer({ port: 8080 });
 server.get('/', (req, res) => {
   res.send('hello, world');
 });
+
+// static file hosting built in:
+server.get(useStatic(path.join(__dirname, 'static')));
 
 // you can also chain!
 server.get('/baz', (req, res, next) => {
@@ -56,7 +60,6 @@ server.get('/baz', (req, res, next) => {
 
 // make sure to call .init, to create the server!
 server.init().then(() => console.log('listening on 8080'));
-
 ```
 
 ## Roadmap:
@@ -66,5 +69,5 @@ server.init().then(() => console.log('listening on 8080'));
 - [x] next() (very fucking difficult)
 - [ ] cookie parsing (sort of works)
 - [x] `use` middleware
-- [ ] Static files
+- [x] Static files
 - [ ] Compression (gzip + ???)

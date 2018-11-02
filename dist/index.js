@@ -8,7 +8,7 @@ var Server_1 = __importDefault(require("./Server"));
 var assert_1 = __importDefault(require("assert"));
 var d = debug_1.default('relay:index');
 ;
-exports.createServer = function (options) {
+function createServer(options) {
     d('creating server');
     // check for options
     assert_1.default(options, 'Options missing!');
@@ -26,5 +26,9 @@ exports.createServer = function (options) {
         server = new Server_1.default(port);
     }
     return server;
-};
+}
+exports.default = createServer;
+;
+var util_1 = require("./util");
+exports.useStatic = util_1.useStatic;
 //# sourceMappingURL=index.js.map
