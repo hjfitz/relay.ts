@@ -10,7 +10,7 @@ export default class Request {
     query: object;
     pathname: string;
     payload?: object | string;
-    private _cookies;
+    cookies: Object;
     constructor(options: IRequest, pure: http.IncomingMessage);
     static parseQuery(query?: string): object;
     handleIncomingStream(type?: string): Promise<Request>;

@@ -5,9 +5,18 @@ import clone from 'lodash/clone';
 
 import * as util from './util';
 import { IRequest, Middleware } from './Server';
-
+import { access } from 'fs';
 
 const d = debug('server:Request');
+
+const parseCookies = (dough: string): Object => dough
+  .split(';')
+  .map((pair: string) => {
+    const [key, ...vals]: string[] = pair.split('=');
+    return { [key]: vals.join('=') };
+  })
+  .reduce((acc: Object, cur: { [x: string]: string; }) => Object.assign(acc, cur), {});
+
 
 export default class Request {
   _req: http.IncomingMessage;
@@ -18,17 +27,18 @@ export default class Request {
   query: object;
   pathname: string;
   payload?: object | string;
-  private _cookies: string[];
+  cookies: Object;
 
   constructor(options: IRequest, pure: http.IncomingMessage) {
     this.url = options.pathname || 'unknown';
-    this.headers = options.headers;
+    this.headers = options.headers || '';
     this.method = options.method || 'unknown';
     this.code = options.code || 500;
     this.query = Request.parseQuery(options.query || '');
     this.pathname = options.pathname || '/';
     this._req = pure;
-    this._cookies = pure.rawHeaders;
+    this.cookies = parseCookies(this.headers.cookie || '');
+    d('cookies parsed:', this.cookies);
 
     d(`Request made to ${this.url}`);
   }

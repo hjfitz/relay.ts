@@ -14,16 +14,25 @@ var debug_1 = __importDefault(require("debug"));
 var querystring_1 = __importDefault(require("querystring"));
 var util = __importStar(require("./util"));
 var d = debug_1.default('server:Request');
+var parseCookies = function (dough) { return dough
+    .split(';')
+    .map(function (pair) {
+    var _a = pair.split('='), key = _a[0], vals = _a.slice(1);
+    return _b = {}, _b[key] = vals.join('='), _b;
+    var _b;
+})
+    .reduce(function (acc, cur) { return Object.assign(acc, cur); }, {}); };
 var Request = /** @class */ (function () {
     function Request(options, pure) {
         this.url = options.pathname || 'unknown';
-        this.headers = options.headers;
+        this.headers = options.headers || '';
         this.method = options.method || 'unknown';
         this.code = options.code || 500;
         this.query = Request.parseQuery(options.query || '');
         this.pathname = options.pathname || '/';
         this._req = pure;
-        this._cookies = pure.rawHeaders;
+        this.cookies = parseCookies(this.headers.cookie || '');
+        d('cookies parsed:', this.cookies);
         d("Request made to " + this.url);
     }
     Request.parseQuery = function (query) {
