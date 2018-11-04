@@ -90,19 +90,21 @@ var Server = /** @class */ (function () {
         var all = this.middleware['*'];
         // apply all '*' to each method
         // go through each verb we currently have
-        Object.keys(this.middleware).forEach(function (verb) {
-            if (verb === '*')
-                return;
-            var middlewares = _this.middleware[verb];
-            // go through each url on the middleware 
-            Object.keys(all).forEach(function (url) {
-                if (url in middlewares)
-                    (_a = middlewares[url]).push.apply(_a, all[url]);
-                else
-                    middlewares[url] = all[url].slice();
-                var _a;
+        if (all) {
+            Object.keys(this.middleware).forEach(function (verb) {
+                if (verb === '*')
+                    return;
+                var middlewares = _this.middleware[verb];
+                // go through each url on the middleware
+                Object.keys(all).forEach(function (url) {
+                    var _a;
+                    if (url in middlewares)
+                        (_a = middlewares[url]).push.apply(_a, all[url]);
+                    else
+                        middlewares[url] = all[url].slice();
+                });
             });
-        });
+        }
         // d('parsed round 1', this.middleware);
         d('verbs handled');
         // append wildcards to each url

@@ -51,7 +51,7 @@ declare class Server {
      * clean this the fuck up
      */
     prepareMiddleware(): void;
-    private add(method, url, middleware?);
-    private addMw(method, url, middleware);
+    private add;
+    private addMw;
 }
 export default Server;

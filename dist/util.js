@@ -33,12 +33,12 @@ function parseBoundary(type, body) {
         }
     }
     var parsed = keySplit.map(function (pair) {
+        var _a;
         var unparsedKey = pair[0], rest = pair.slice(1);
         var key = unparsedKey
             .replace('Content-Disposition: form-data; name=', '')
             .replace(/"/g, '');
         return _a = {}, _a[key] = rest.join(), _a;
-        var _a;
     }).reduce(function (acc, cur) { return Object.assign(acc, cur); }, {});
     return parsed;
 }

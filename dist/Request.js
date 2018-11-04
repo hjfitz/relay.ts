@@ -17,9 +17,9 @@ var d = debug_1.default('server:Request');
 var parseCookies = function (dough) { return dough
     .split(';')
     .map(function (pair) {
-    var _a = pair.split('='), key = _a[0], vals = _a.slice(1);
-    return _b = {}, _b[key] = vals.join('='), _b;
-    var _b;
+    var _a;
+    var _b = pair.split('='), key = _b[0], vals = _b.slice(1);
+    return _a = {}, _a[key] = vals.join('='), _a;
 })
     .reduce(function (acc, cur) { return Object.assign(acc, cur); }, {}); };
 var Request = /** @class */ (function () {

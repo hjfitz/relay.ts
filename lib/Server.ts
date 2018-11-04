@@ -25,7 +25,7 @@ export interface IRequest {
   method?: string;
   code: number | undefined;
   query: string | null;
-  pathname?: string; 
+  pathname?: string;
   payload?: object;
 }
 
@@ -54,10 +54,10 @@ class Server {
   private port: number;
   private verbs: string[];
   all: Function;
-  get: Function; 
+  get: Function;
   head: Function;
   patch: Function ;
-  options: Function; 
+  options: Function;
   delete: Function;
   post: Function;
   put: Function;
@@ -70,7 +70,7 @@ class Server {
     // instantiate a http(s) server
     this._server = http.createServer(this.listener);
     if (useSSL) this._server = https.createServer({ key, cert }, this.listener);
-        
+
     this.middleware = { GET: {}, HEAD: {}, OPTIONS: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
     this.verbs = Object.keys(this.middleware);
 
@@ -110,14 +110,13 @@ class Server {
       // first funciton is used immediately
       const { func }: {func: Function} = urlMws.shift();
 
-
       const parsedRes: Response = new Response(res, parsedReq, urlMws);
       d('Response and request parsed');
-      
+
       func(parsedReq, parsedRes, parsedRes.getNext);
     });
   }
-  
+
   // todo: add stack to req
   parseRequest(req: http.IncomingMessage): Promise<Request> {
 
@@ -151,15 +150,17 @@ class Server {
 
     // apply all '*' to each method
     // go through each verb we currently have
-    Object.keys(this.middleware).forEach((verb: string) => {
-      if (verb === '*') return;
-      const middlewares = this.middleware[verb];
-      // go through each url on the middleware 
-      Object.keys(all).forEach((url: string) => {
-        if (url in middlewares) middlewares[url].push(...all[url]);
-        else middlewares[url] = [...all[url]];
+    if (all) {
+      Object.keys(this.middleware).forEach((verb: string) => {
+        if (verb === '*') return;
+        const middlewares = this.middleware[verb];
+      // go through each url on the middleware
+        Object.keys(all).forEach((url: string) => {
+          if (url in middlewares) middlewares[url].push(...all[url]);
+          else middlewares[url] = [...all[url]];
+        });
       });
-    }); 
+    }
     // d('parsed round 1', this.middleware);
     d('verbs handled');
 
@@ -187,14 +188,14 @@ class Server {
     if (url instanceof Function) return this.addMw(method, '*', url);
     throw new Error('should not get here');
   }
-  
+
   private addMw(method: string, url: string, middleware: Function): Server {
     const newWare = { func: middleware, idx: this.mwCount };
-    
+
     if (! (method in this.middleware)) this.middleware[method] = {};
     if (!(url in this.middleware[method])) this.middleware[method][url] = [newWare];
     else this.middleware[method][url].push(newWare);
-    
+
     d(`${method} middleware for ${url} added`);
     this.mwCount += 1;
 
