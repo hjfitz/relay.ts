@@ -1,6 +1,6 @@
 {
-  "name": "express-clone",
-  "version": "1.0.0",
+  "name": "relay.ts",
+  "version": "0.0.0-rc.1",
   "description": "A basic Express-esque HTTP(S) server",
   "main": "test.js",
   "repository": "https://github.com/hjfitz/express-clone",
@@ -12,6 +12,7 @@
   "devDependencies": {
     "@types/debug": "^0.0.30",
     "@types/lodash": "^4.14.110",
+    "@types/mime-types": "^2.1.0",
     "@types/node": "^9.6.1",
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
@@ -25,6 +26,7 @@
   "dependencies": {
     "axios": "^0.18.0",
     "debug": "^3.1.0",
-    "lodash": "^4.17.5"
+    "lodash": "^4.17.5",
+    "mime-types": "^2.1.21"
   }
 }

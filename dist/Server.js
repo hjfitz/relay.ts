@@ -9,7 +9,7 @@ var url_1 = require("url");
 var debug_1 = __importDefault(require("debug"));
 var Request_1 = __importDefault(require("./Request"));
 var Response_1 = __importDefault(require("./Response"));
-var d = debug_1.default('server:Server');
+var d = debug_1.default('relay:Server');
 var Server = /** @class */ (function () {
     function Server(port, useSSL, cert, key) {
         if (useSSL === void 0) { useSSL = false; }
@@ -21,7 +21,6 @@ var Server = /** @class */ (function () {
         if (useSSL)
             this._server = https_1.default.createServer({ key: key, cert: cert }, this.listener);
         this.middleware = { GET: {}, HEAD: {}, OPTIONS: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
-        this.verbs = Object.keys(this.middleware);
         this.all = this.add.bind(this, '*');
         this.use = this.add.bind(this, '*');
         this.get = this.add.bind(this, 'GET');
@@ -48,36 +47,45 @@ var Server = /** @class */ (function () {
     };
     Server.prototype.listener = function (req, res) {
         var _this = this;
-        d('connection to server made');
+        d('===BEGINNING PARSE===');
         // firstly, parse the request and response - make it a little more express-like
         this.parseRequest(req).then(function (parsedReq) {
-            var method = parsedReq.method, pathname = parsedReq.pathname;
+            var method = parsedReq.method, url = parsedReq.url;
             // default to GET if no method
             var mws = _this.middleware[method || 'GET'];
-            var urlMws = (mws[pathname || '*'] || mws['*']).slice();
+            var urlMws = (mws[url || '*'] || mws['*']).slice();
+            d("queue size for " + url + ": " + urlMws.length);
             // first funciton is used immediately
             var func = urlMws.shift().func;
             var parsedRes = new Response_1.default(res, parsedReq, urlMws);
-            d('Response and request parsed');
+            d('Request and Response parsed');
             func(parsedReq, parsedRes, parsedRes.getNext);
+            d('===END PARSE===');
         });
     };
     // todo: add stack to req
     Server.prototype.parseRequest = function (req) {
         // need to parse to METHOD & path at minimum
-        req.on('close', function () { return console.log('//todo'); }); // to remove from queue
+        // req.on('close', () => console.log('//todo'));
         // get what we're interested from the pure request
-        var url = req.url, headers = req.headers, method = req.method, code = req.statusCode;
-        var _a = url_1.parse(url || ''), query = _a.query, pathname = _a.pathname;
-        d('url parsed: ', pathname);
+        var url = req.url, headers = req.headers, method = req.method, statusCode = req.statusCode;
+        var query = url_1.parse(url || '').query;
+        d('beginning request parse');
         // create request object
-        var requestOpts = { url: url, headers: headers, method: method, code: code, query: query, pathname: pathname };
-        var parsedRequest = new Request_1.default(requestOpts, req);
+        var parsedRequest = new Request_1.default({
+            statusCode: statusCode,
+            headers: headers,
+            method: method,
+            query: query,
+            req: req,
+            url: url,
+        });
         // attempt to parse incoming data
         var contentType = headers['content-type'];
         d("content type: " + contentType);
         if (!('content-type' in headers))
             return Promise.resolve(parsedRequest);
+        d('parsing incoming stream...');
         // handleIncomingStream returns itself - resolve after handling
         return parsedRequest.handleIncomingStream(contentType);
     };

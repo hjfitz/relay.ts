@@ -5,7 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var debug_1 = __importDefault(require("debug"));
 var fs_1 = __importDefault(require("fs"));
-var d = debug_1.default('server:Response');
+var mime_types_1 = __importDefault(require("mime-types"));
+var d = debug_1.default('relay:Response');
 var Response = /** @class */ (function () {
     function Response(resp, req, middleware) {
         this._res = resp;
@@ -18,7 +19,7 @@ var Response = /** @class */ (function () {
     }
     Response.prototype.getNext = function () {
         d('Returning next middleware for ', this._req.url);
-        d({ queue: this.queue }, 'for', this._req.url);
+        d('queue size:', this.queue.length, 'for', this._req.url);
         if (!this.queue.length)
             return this.send("unable to " + this._req.method + " on " + this._req.url);
         var next = this.queue.shift();
@@ -30,12 +31,15 @@ var Response = /** @class */ (function () {
      * @param payload a string of data to send
      * @param encoding encoding to use
      */
-    Response.prototype.send = function (payload, encoding) {
+    Response.prototype.send = function (payload, type, encoding) {
         var _this = this;
+        if (type === void 0) { type = 'text/plain'; }
         if (encoding === void 0) { encoding = 'utf8'; }
         d('sending raw data', payload);
+        this._res.writeHead(200, { 'Content-Type': type });
         this._res.write(payload, encoding, function () {
             _this._res.end('\n');
+            _this._req._req.connection.destroy();
         });
     };
     /**
@@ -46,13 +50,12 @@ var Response = /** @class */ (function () {
     Response.prototype.sendFile = function (filename, encoding) {
         if (encoding === void 0) { encoding = 'utf8'; }
         d('sending file');
-        try {
-            var contents = fs_1.default.readFileSync(filename, { encoding: encoding }).toString();
-            this.send(contents, encoding);
-        }
-        catch (err) {
-            d(err);
-        }
+        d('calculating mime type');
+        var type = mime_types_1.default.lookup(filename);
+        d("sending " + type);
+        console.log('static');
+        var contents = fs_1.default.readFileSync(filename, { encoding: encoding }).toString();
+        this.send(contents, type, encoding);
     };
     /**
      * serialise an object and send it

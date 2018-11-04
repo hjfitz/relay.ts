@@ -5,4 +5,5 @@ export interface ServerOptions {
     key?: string;
     plugins?: string[];
 }
-export declare const createServer: (options: ServerOptions) => Server;
+export default function createServer(options: ServerOptions): Server;
+export { useStatic } from './util';
