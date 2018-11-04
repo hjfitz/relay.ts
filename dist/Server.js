@@ -16,10 +16,12 @@ var Server = /** @class */ (function () {
         this.mwCount = 0;
         this.listener = this.listener.bind(this);
         this.port = port;
+        this.useSSL = useSSL;
         // instantiate a http(s) server
+        this.ssl = { key: key, cert: cert };
         this._server = http_1.default.createServer(this.listener);
-        if (useSSL)
-            this._server = https_1.default.createServer({ key: key, cert: cert }, this.listener);
+        if (this.useSSL)
+            this._server = https_1.default.createServer(this.ssl, this.listener);
         this.middleware = { GET: {}, HEAD: {}, OPTIONS: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
         this.all = this.add.bind(this, '*');
         this.use = this.add.bind(this, '*');
@@ -38,10 +40,23 @@ var Server = /** @class */ (function () {
         var _this = this;
         this.prepareMiddleware();
         return new Promise(function (resolve) {
+            _this._server = http_1.default.createServer(_this.listener);
+            if (_this.useSSL)
+                _this._server = https_1.default.createServer(_this.ssl, _this.listener);
             _this._server.listen(_this.port, function () {
                 if (cb)
                     cb();
                 resolve(_this);
+            });
+        });
+    };
+    Server.prototype.close = function (cb) {
+        var _this = this;
+        return new Promise(function (resolve) {
+            _this._server.close(function () {
+                if (cb)
+                    cb();
+                resolve();
             });
         });
     };
@@ -53,13 +68,17 @@ var Server = /** @class */ (function () {
             var method = parsedReq.method, url = parsedReq.url;
             // default to GET if no method
             var mws = _this.middleware[method || 'GET'];
-            var urlMws = (mws[url || '*'] || mws['*']).slice();
+            var rawMws = mws[url || '*'] || mws['*'] || [];
+            // shallow clone so resp has it's own queue
+            var urlMws = rawMws.slice();
             d("queue size for " + url + ": " + urlMws.length);
             // first funciton is used immediately
-            var func = urlMws.shift().func;
+            var curMw = urlMws.shift();
             var parsedRes = new Response_1.default(res, parsedReq, urlMws);
             d('Request and Response parsed');
-            func(parsedReq, parsedRes, parsedRes.getNext);
+            if (!curMw || !curMw.func)
+                return parsedRes.getNext();
+            curMw.func(parsedReq, parsedRes, parsedRes.getNext);
             d('===END PARSE===');
         });
     };

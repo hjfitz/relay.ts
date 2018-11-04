@@ -51,7 +51,7 @@ var Response = /** @class */ (function () {
         if (encoding === void 0) { encoding = 'utf8'; }
         d('sending file');
         d('calculating mime type');
-        var type = mime_types_1.default.lookup(filename);
+        var type = mime_types_1.default.lookup(filename) || undefined;
         d("sending " + type);
         console.log('static');
         var contents = fs_1.default.readFileSync(filename, { encoding: encoding }).toString();

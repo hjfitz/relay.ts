@@ -7,7 +7,6 @@ var debug_1 = __importDefault(require("debug"));
 var Server_1 = __importDefault(require("./Server"));
 var assert_1 = __importDefault(require("assert"));
 var d = debug_1.default('relay:index');
-;
 function createServer(options) {
     d('creating server');
     // check for options
@@ -27,8 +26,7 @@ function createServer(options) {
     }
     return server;
 }
-exports.default = createServer;
-;
+exports.createServer = createServer;
 var util_1 = require("./util");
 exports.useStatic = util_1.useStatic;
 //# sourceMappingURL=index.js.map

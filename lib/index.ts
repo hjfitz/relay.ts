@@ -4,27 +4,24 @@ import assert from 'assert';
 
 const d = debug('relay:index');
 
-
 export interface ServerOptions {
   port: number;
   cert?: string;
   key?: string;
   plugins?: string[];
-};
+}
 
-
-export default function createServer(options: ServerOptions): Server {
+export function createServer(options: ServerOptions): Server {
   d('creating server');
   // check for options
   assert(options, 'Options missing!');
-  
+
   // check for port
   assert('port' in options, 'Port missing in options!');
-  
 
   const useSSL: boolean = ('cert' in options) && ('key' in options);
   d(`Uses SSL: ${useSSL}`);
-  
+
   const { port, cert, key, plugins } = options;
   d(`port: ${port}`);
 
@@ -37,6 +34,6 @@ export default function createServer(options: ServerOptions): Server {
   }
 
   return server;
-};
+}
 
-export { useStatic } from './util'
+export { useStatic } from './util';

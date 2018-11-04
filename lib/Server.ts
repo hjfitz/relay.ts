@@ -18,6 +18,7 @@ class Server {
   private _server: https.Server | http.Server;
   private middleware: any;
   private port: number;
+  useSSL: Boolean;
   all: Function;
   get: Function;
   head: Function;
@@ -32,9 +33,11 @@ class Server {
     this.mwCount = 0;
     this.listener = this.listener.bind(this);
     this.port = port;
+    this.useSSL = useSSL;
     // instantiate a http(s) server
+    this.ssl = { key, cert };
     this._server = http.createServer(this.listener);
-    if (useSSL) this._server = https.createServer({ key, cert }, this.listener);
+    if (this.useSSL) this._server = https.createServer(this.ssl, this.listener);
 
     this.middleware = { GET: {}, HEAD: {}, OPTIONS: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
 
@@ -55,9 +58,20 @@ class Server {
   init(cb?: Function): Promise<Server> {
     this.prepareMiddleware();
     return new Promise((resolve: Function) => {
+      this._server = http.createServer(this.listener);
+      if (this.useSSL) this._server = https.createServer(this.ssl, this.listener);
       this._server.listen(this.port, () => {
         if (cb) cb();
         resolve(this);
+      });
+    });
+  }
+
+  close(cb?: Function): Promise<void> {
+    return new Promise((resolve: Function) => {
+      this._server.close(() => {
+        if (cb) cb();
+        resolve();
       });
     });
   }
@@ -69,17 +83,22 @@ class Server {
       const { method, url } = parsedReq;
       // default to GET if no method
       const mws = this.middleware[method || 'GET'];
-      const urlMws = [...mws[url || '*'] || mws['*']];
+      const rawMws = mws[url || '*'] || mws['*'] || [];
+
+      // shallow clone so resp has it's own queue
+      const urlMws = [...rawMws];
 
       d(`queue size for ${url}: ${urlMws.length}`);
 
       // first funciton is used immediately
-      const { func }: {func: Function} = urlMws.shift();
+      const curMw: Middleware = urlMws.shift();
 
       const parsedRes: Response = new Response(res, parsedReq, urlMws);
       d('Request and Response parsed');
 
-      func(parsedReq, parsedRes, parsedRes.getNext);
+      if (!curMw || !curMw.func) return parsedRes.getNext();
+
+      curMw.func(parsedReq, parsedRes, parsedRes.getNext);
       d('===END PARSE===');
     });
   }

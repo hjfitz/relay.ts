@@ -1,7 +1,7 @@
 import http from 'http';
 import debug from 'debug';
 import fs from 'fs';
-import mime from 'mime-types';
+import mimeTypes from 'mime-types';
 import Request from './Request';
 import { Middleware } from './Server';
 
@@ -52,8 +52,8 @@ export default class Response {
   sendFile(filename: string, encoding: string = 'utf8'): void {
     d('sending file');
     d('calculating mime type');
-    const type = mime.lookup(filename);
-    d(`sending ${type}`)
+    const type = mimeTypes.lookup(filename) || undefined;
+    d(`sending ${type}`);
     console.log('static');
     const contents: string = fs.readFileSync(filename, { encoding }).toString();
     this.send(contents, type, encoding);
