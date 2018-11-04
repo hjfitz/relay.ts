@@ -1,9 +1,12 @@
 const { expect } = require('chai');
 const axios = require('axios');
+const path = require('path');
+
+const static = path.join(process.cwd(), 'test', 'static');
 
 const port = 8080;
 
-const base = axios.create({ baseURL: `http://localhost:${port}` })
+const base = axios.create({ baseURL: `http://localhost:${port}` });
 
 require('../dist').createServer({ port })
 .get('/', (_, res) => res.sendStatus(200))
@@ -13,6 +16,11 @@ require('../dist').createServer({ port })
 .options('/', (_, res) => res.sendStatus(200))
 .patch('/', (_, res) => res.sendStatus(200))
 .delete('/', (_, res) => res.sendStatus(200))
+.get('/plaintext', (_, res) => res.sendFile(path.join(static, 'plain.txt')))
+.get('/plaintext2', (_, res) => res.send('oioi laddo'))
+.get('/json', (_, res) => res.json({ response: 'success' }))
+.get('/css', (_, res) => res.sendFile(path.join(static, 'style.css')))
+.get('/html', (_, res) => res.sendFile(path.join(static, 'index.html')))
 .init();
 
 describe('Basic server functions', () => {
@@ -80,15 +88,33 @@ describe('Response to methods', () => {
 
 describe('server responses', () => {
   it('should send plaintext', (done) => {
-
+    Promise.all([
+      base.get('/plaintext'),
+      base.get('/plaintext2'),
+    ]).then(resp => resp.map(r => r.headers['content-type'])).then(types => {
+      expect([...new Set(types)]).to.be.length(1);
+      done();
+    });
   });
 
   it('should send json', (done) => {
-
+    base.get('/json').then(resp => {
+      const { data } = resp;
+      expect(Object.keys(data).length).to.equal(1);
+      expect(data.response).to.equal('success');
+      done();
+    });
   });
 
-  it('should send files with correct headers', (done) => {
-
+  it('should send files with correct headers', async (done) => {
+    const [{ headers: css }, { headers: html }] = await Promise.all([
+      base.get('/css'),
+      base.get('/html')
+    ]);
+    console.log(html['content-type']);
+    // expect(css['content-type']).to.equal('text/css');
+    expect(html['content-type']).to.equal('text/html');
+    done();
   });
 
   it('should send a status', (done) => {

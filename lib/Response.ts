@@ -37,6 +37,7 @@ export default class Response {
    */
   send(payload: string, type: string = 'text/plain', encoding: string = 'utf8'): void {
     d('sending raw data', payload);
+    this._res.setHeader('Content-Type', type);
     this._res.writeHead(200, { 'Content-Type': type });
     this._res.write(payload, encoding, () => {
       this._res.end('\n');
@@ -54,7 +55,6 @@ export default class Response {
     d('calculating mime type');
     const type = mimeTypes.lookup(filename) || undefined;
     d(`sending ${type}`);
-    console.log('static');
     const contents: string = fs.readFileSync(filename, { encoding }).toString();
     this.send(contents, type, encoding);
 
@@ -67,9 +67,7 @@ export default class Response {
   json(payload: object): void {
     d('responding with JSON');
     const serialised: string = JSON.stringify(payload);
-    d('setting header content-type to application/json');
-    this._res.setHeader('content-type', 'application/json');
-    this.send(serialised);
+    this.send(serialised, 'application/json');
   }
 
   /**

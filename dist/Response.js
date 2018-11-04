@@ -36,6 +36,7 @@ var Response = /** @class */ (function () {
         if (type === void 0) { type = 'text/plain'; }
         if (encoding === void 0) { encoding = 'utf8'; }
         d('sending raw data', payload);
+        this._res.setHeader('Content-Type', type);
         this._res.writeHead(200, { 'Content-Type': type });
         this._res.write(payload, encoding, function () {
             _this._res.end('\n');
@@ -53,7 +54,6 @@ var Response = /** @class */ (function () {
         d('calculating mime type');
         var type = mime_types_1.default.lookup(filename) || undefined;
         d("sending " + type);
-        console.log('static');
         var contents = fs_1.default.readFileSync(filename, { encoding: encoding }).toString();
         this.send(contents, type, encoding);
     };
@@ -64,9 +64,7 @@ var Response = /** @class */ (function () {
     Response.prototype.json = function (payload) {
         d('responding with JSON');
         var serialised = JSON.stringify(payload);
-        d('setting header content-type to application/json');
-        this._res.setHeader('content-type', 'application/json');
-        this.send(serialised);
+        this.send(serialised, 'application/json');
     };
     /**
      * Set a message and code, and end the connection
