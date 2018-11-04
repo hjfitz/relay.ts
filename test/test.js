@@ -1,14 +1,16 @@
-const relay = require('./dist');
+const relay = require('../dist');
 const path = require('path');
 console.log(relay);
 
 const port = 8888;
 
-const app = relay.default({ port });
+const app = relay.createServer({ port });
 
 app.use('/oioi', (req, res) => res.send('oi'));
 
-app.use(relay.useStatic(path.join(__dirname, 'static')));
+const static = path.join(__dirname, 'static');
+
+app.use(relay.useStatic(static));
 
 app.get('/', (req, res, next) => {
   console.log('oi');

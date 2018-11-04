@@ -173,6 +173,7 @@ class Server {
     });
     d('wildcards handled');
     d('middleware prepped');
+    Object.freeze(this.middleware);
   }
 
   private add(method: string, url: string|Function, middleware?: Function): Server {

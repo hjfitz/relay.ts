@@ -51,7 +51,8 @@ function useStatic(absolute) {
     return function staticFiles(req, res, next) {
         var resourcePath = path_1.default.join(absolute, req.url);
         d("Attempting to retrieve for " + req.url);
-        if (!fs_1.default.existsSync(resourcePath))
+        d(resourcePath);
+        if (!fs_1.default.existsSync(resourcePath) || fs_1.default.lstatSync(resourcePath).isDirectory())
             return next();
         res.sendFile(resourcePath);
     };

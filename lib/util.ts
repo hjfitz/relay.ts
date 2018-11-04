@@ -11,13 +11,13 @@ const d = debug('relay:util');
 export const noop = () => {};
 
 /**
- * 
- * @param type 
- * @param body 
+ *
+ * @param type
+ * @param body
  */
 export function parseBoundary(type: string, body: string): object {
   d('parsing form with boundary');
-  const [,delim]: string[] = type.split('=');
+  const [, delim]: string[] = type.split('=');
   d(`delim: ${delim}`);
   const splitBody: string[] = body.split('\n').map(line => line.replace(/\r/g, ''));
   const keySplit: string[][] = [];
@@ -50,8 +50,8 @@ export function useStatic(absolute: string): Function {
   return function staticFiles(req: Request, res: Response, next: Function): void {
     const resourcePath = path.join(absolute, req.url);
     d(`Attempting to retrieve for ${req.url}`);
-    if (!fs.existsSync(resourcePath)) return next();
+    d(resourcePath);
+    if (!fs.existsSync(resourcePath) || fs.lstatSync(resourcePath).isDirectory()) return next();
     res.sendFile(resourcePath);
-  }
+  };
 }
-

@@ -155,6 +155,7 @@ var Server = /** @class */ (function () {
         });
         d('wildcards handled');
         d('middleware prepped');
+        Object.freeze(this.middleware);
     };
     Server.prototype.add = function (method, url, middleware) {
         if (typeof url === 'string' && middleware)
