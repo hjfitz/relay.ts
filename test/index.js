@@ -2,6 +2,7 @@ const { expect } = require('chai');
 const axios = require('axios');
 const path = require('path');
 const FormData = require('form-data');
+const fs = require('fs');
 
 const static = path.join(process.cwd(), 'test', 'static');
 
@@ -17,7 +18,10 @@ base.interceptors.response.use(response => {
   return error;
 });
 
-require('../dist').createServer({ port })
+const relay = require('../dist')
+
+relay.createServer({ port })
+.use(relay.useStatic(path.join(__dirname, 'static')))
 .get('/', (_, res) => res.sendStatus(200))
 .post('/', (_, res) => res.sendStatus(200))
 .put('/', (_, res) => res.sendStatus(200))
@@ -33,6 +37,14 @@ require('../dist').createServer({ port })
 .post('/json', (req, res) => res.json(req.payload))
 .post('/form', (req, res) => res.json(req.payload))
 .get('/qs', (req, res) => res.json(req.query))
+.get('/next1', (req, res, next) => next())
+.get('/next1', (req, res) => res.send('next1'))
+.get('/next3', (req, res, next) => next())
+.get('/next3', (req, res, next) => next())
+.use((req, res, next) => next())
+.get('/next3', (req, res, next) => next())
+.get('/next3', (req, res) => res.send('next3'))
+.get('/nextNone', (req, res, next) => next())
 .init();
 
 describe('Basic server functions', () => {
@@ -194,18 +206,57 @@ describe('request parsing', () => {
 
 describe('next()', () => {
   it('should work after one pass', (done) => {
-
+    base.get('/next1').then(resp => {
+      expect(resp.data).to.equal('next1\n');
+      done();
+    })
   })
 
   it('should work after multiple calls', (done) => {
-
+    base.get('/next3').then(resp => {
+      expect(resp.data).to.equal('next3\n');
+      done();
+    })
   });
 
-  it('should respond with nothing found if next is called and there is no more middleware', () => {
-
+  it('should respond with nothing found if next is called and there is no more middleware', (done) => {
+    base.get('/nextNone').then(resp => {
+      expect(resp.response.data).to.equal('unable to GET on /nextNone\n');
+      expect(resp.response.status).to.equal(404);
+      done();
+    })
   });
 });
 
 describe('static hosting', () => {
+  it('should send index.html', (done) => {
+    base.get('/index.html').then(resp => {
+      expect(resp.headers['content-type']).to.equal('text/html');
+      expect(resp.data).to.equal(fs.readFileSync(path.join(__dirname, 'static', 'index.html')).toString() + '\n');
+      done();
+    })
+  });
 
+  it('should send some CSS', (done) => {
+    base.get('/style.css').then(resp => {
+      expect(resp.headers['content-type']).to.equal('text/css');
+      expect(resp.data).to.equal(fs.readFileSync(path.join(__dirname, 'static', 'style.css')).toString() + '\n');
+      done();
+    });
+  });
+
+  it('should send some javascript', (done) => {
+    base.get('/main.js').then(resp => {
+      expect(resp.headers['content-type']).to.equal('application/javascript');
+      expect(resp.data).to.equal(fs.readFileSync(path.join(__dirname, 'static', 'main.js')).toString() + '\n');
+      done();
+    });
+  });
+
+  it('should respond with a 404', (done) => {
+    base.get('/jquery.min.js').then(resp => {
+      expect(resp.response.status).to.equal(404);
+      done();
+    })
+  });
 });
