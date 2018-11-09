@@ -1,12 +1,13 @@
 /// <reference types="node" />
 import http from 'http';
+import querystring from 'querystring';
 interface IRequest {
     url: string | undefined;
     headers: http.IncomingHttpHeaders;
     method?: string;
     statusCode: number | undefined;
     req: http.IncomingMessage;
-    query: string | null;
+    query: querystring.ParsedUrlQuery;
     pathname?: string;
     payload?: object;
 }
@@ -16,11 +17,10 @@ declare class Request {
     method: string;
     headers: http.IncomingHttpHeaders;
     code: number;
-    query: object;
+    query: querystring.ParsedUrlQuery;
     payload?: object | string;
     cookies: Object;
     constructor(options: IRequest);
-    static parseQuery(query?: string): object;
     handleIncomingStream(type?: string): Promise<Request>;
     parseData(body: string, type?: string): void;
 }

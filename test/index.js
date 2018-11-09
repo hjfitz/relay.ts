@@ -1,14 +1,21 @@
 const { expect } = require('chai');
 const axios = require('axios');
 const path = require('path');
+const FormData = require('form-data');
 
 const static = path.join(process.cwd(), 'test', 'static');
 
-process.on('unhandledRejection', (r) => console.log(r))
+// process.on('unhandledRejection', (r) => console.log(r))
 
 const port = 8080;
 
 const base = axios.create({ baseURL: `http://localhost:${port}` });
+
+base.interceptors.response.use(response => {
+  return response;
+}, error => {
+  return error;
+});
 
 require('../dist').createServer({ port })
 .get('/', (_, res) => res.sendStatus(200))
@@ -23,11 +30,9 @@ require('../dist').createServer({ port })
 .get('/json', (_, res) => res.json({ response: 'success' }))
 .get('/css', (_, res) => res.sendFile(path.join(static, 'style.css')))
 .get('/html', (_, res) => res.sendFile(path.join(static, 'index.html')))
-.post('/json', (req, res) => {
-  delete req._req;
-  console.log(req);
-  res.json(req.payload);
-})
+.post('/json', (req, res) => res.json(req.payload))
+.post('/form', (req, res) => res.json(req.payload))
+.get('/qs', (req, res) => res.json(req.query))
 .init();
 
 describe('Basic server functions', () => {
@@ -39,16 +44,13 @@ describe('Basic server functions', () => {
     });
   });
 
-  it('should respond with a middleware not found, given that appropriate middleware is not added', async (done) => {
-    let resp;
-    try {
-      resp = await base.get('/foo');
-    } catch (err) {
-      console.log(err);
-      expect(err.resp.data).to.equal('unable to GET on /foo\n');
-      
-      done();
-    }
+  it('should respond with a 404, given that appropriate middleware is not added', (done) => {
+      base.get('/foo').then(resp => {
+        expect(resp.response.status).to.equal(404);
+        expect(resp.response.data).to.equal('unable to GET on /foo\n');
+        done();
+      })
+    
   });
 });
 
@@ -118,15 +120,15 @@ describe('server responses', () => {
     });
   });
 
-  it('should send files with correct headers', async (done) => {
-    const [{ headers: css }, { headers: html }] = await Promise.all([
+  it('should send files with correct headers', (done) => {
+    Promise.all([
       base.get('/css'),
       base.get('/html')
-    ]);
-    console.log(html['content-type']);
-    // expect(css['content-type']).to.equal('text/css');
-    expect(html['content-type']).to.equal('text/html');
-    done();
+    ]).then(( [{ headers: css }, { headers: html }]) => {
+      expect(css['content-type']).to.equal('text/css');
+      expect(html['content-type']).to.equal('text/html');
+      done();
+    });
   });
 
   it('should send a 200 status code for a found link', (done) => {
@@ -136,33 +138,57 @@ describe('server responses', () => {
     });
   });
 
-  it('should send a 404 status for a link that is not found', async (done) => {
-    let resp;
-    try {
-      resp = await base.get('/notfound');
-    } catch (err) {
-      expect(resp.status).to.equal(404);
+  it('should send a 404 status for a link that is not found', (done) => {
+    base.get('/notfound').then(resp => {
+      expect(resp.response.status).to.equal(404);
       done();
-    }
+    })
+    
   });
 });
 
 describe('request parsing', () => {
-  it('should parse application/json', async (done) => {
-    const resp = await base.post('/json', { test: 'success' });
-    console.log(resp.data);
+  it('should parse application/json', (done) => {
+    base.post('/json', { test: 'success' }).then(resp => {
+      expect(resp.data.test).to.equal('success');
+      done();
+    });
   });
 
   it('should parse x-www-form-urlencoded', (done) => {
-
+    const requestBody = {
+      type: 'form',
+      test: 'success'
+    }
+    
+    const config = {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    }
+    
+    base.post('/form', requestBody, config).then((resp) => {
+      expect(JSON.stringify(resp.data)).to.equal(JSON.stringify(requestBody));
+      done();
+    });
   });
 
   it('should parse multipart/form-data', (done) => {
-
+    const data = new FormData();
+    data.append('test', 'success');
+    data.append('type', 'form data');
+    const headers = data.getHeaders();
+    base.post('/form', data, { headers }).then(resp => {
+      expect(JSON.stringify(resp.data)).to.equal(JSON.stringify({ test: 'success', type: 'form data' }));
+      done();
+    });
   });
 
   it('should parse queryStrings', (done) => {
-
+    base.get('/qs?test=success&type=form%20data').then(resp => {
+      expect(JSON.stringify(resp.data)).to.equal(JSON.stringify({ test: 'success', type: 'form data' }));
+      done();
+    })
   });
 })
 

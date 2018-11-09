@@ -1,6 +1,7 @@
 import http from 'http';
 import https from 'https';
 import { parse } from 'url';
+import querystring from 'querystring';
 import debug from 'debug';
 
 import Request from './Request';
@@ -110,7 +111,7 @@ class Server {
 
     // get what we're interested from the pure request
     const { url, headers, method, statusCode } = req;
-    const { query } = parse(url || '');
+    const { query, pathname } = parse(url || '');
 
     d('beginning request parse');
     // create request object
@@ -118,9 +119,9 @@ class Server {
       statusCode,
       headers,
       method,
-      query,
+      query: querystring.parse(query || ''),
       req,
-      url,
+      url: pathname,
     });
 
     // attempt to parse incoming data

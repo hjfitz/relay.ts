@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var http_1 = __importDefault(require("http"));
 var https_1 = __importDefault(require("https"));
 var url_1 = require("url");
+var querystring_1 = __importDefault(require("querystring"));
 var debug_1 = __importDefault(require("debug"));
 var Request_1 = __importDefault(require("./Request"));
 var Response_1 = __importDefault(require("./Response"));
@@ -88,16 +89,16 @@ var Server = /** @class */ (function () {
         // req.on('close', () => console.log('//todo'));
         // get what we're interested from the pure request
         var url = req.url, headers = req.headers, method = req.method, statusCode = req.statusCode;
-        var query = url_1.parse(url || '').query;
+        var _a = url_1.parse(url || ''), query = _a.query, pathname = _a.pathname;
         d('beginning request parse');
         // create request object
         var parsedRequest = new Request_1.default({
             statusCode: statusCode,
             headers: headers,
             method: method,
-            query: query,
+            query: querystring_1.default.parse(query || ''),
             req: req,
-            url: url,
+            url: pathname,
         });
         // attempt to parse incoming data
         var contentType = headers['content-type'];

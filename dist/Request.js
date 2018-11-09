@@ -28,20 +28,11 @@ var Request = /** @class */ (function () {
         this.headers = options.headers || '';
         this.method = options.method || 'unknown';
         this.code = options.statusCode || 200;
-        this.query = Request.parseQuery(options.query || '');
+        this.query = options.query;
         this._req = options.req;
         this.cookies = parseCookies(this.headers.cookie || '');
         d("Request made to " + this.url);
     }
-    Request.parseQuery = function (query) {
-        if (!query)
-            return {};
-        return query.split('&').reduce(function (acc, pair) {
-            var _a = pair.split('='), key = _a[0], value = _a[1];
-            acc[key] = value;
-            return acc;
-        }, {});
-    };
     Request.prototype.handleIncomingStream = function (type) {
         var _this = this;
         return new Promise(function (res) {
@@ -82,10 +73,17 @@ var Request = /** @class */ (function () {
         }
         else if (type === 'application/x-www-form-urlencoded') {
             d('parsing form x-www-formdata');
+            d(body);
             d(querystring_1.default.parse(body));
-            var parsedForm = querystring_1.default.parse(body);
-            d(typeof parsedForm);
-            this.payload = parsedForm;
+            try {
+                this.payload = JSON.parse(body);
+            }
+            catch (err) {
+                d('err parsing with JSON.parse');
+                var parsedForm = querystring_1.default.parse(body);
+                d(typeof parsedForm);
+                this.payload = parsedForm;
+            }
         }
         else {
             d('unknown header!', type);

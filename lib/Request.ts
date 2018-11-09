@@ -20,7 +20,7 @@ interface IRequest {
   method?: string;
   statusCode: number | undefined;
   req: http.IncomingMessage;
-  query: string | null;
+  query: querystring.ParsedUrlQuery;
   pathname?: string;
   payload?: object;
 }
@@ -31,7 +31,7 @@ class Request {
   method: string;
   headers: http.IncomingHttpHeaders;
   code: number;
-  query: object;
+  query: querystring.ParsedUrlQuery;
   payload?: object | string;
   cookies: Object;
 
@@ -40,19 +40,10 @@ class Request {
     this.headers = options.headers || '';
     this.method = options.method || 'unknown';
     this.code = options.statusCode || 200;
-    this.query = Request.parseQuery(options.query || '');
+    this.query = options.query;
     this._req = options.req;
     this.cookies = parseCookies(this.headers.cookie || '');
     d(`Request made to ${this.url}`);
-  }
-
-  static parseQuery(query?: string): object {
-    if (!query) return {};
-    return query.split('&').reduce((acc, pair) => {
-      const [key, value] = pair.split('=');
-      acc[key] = value;
-      return acc;
-    },                             {});
   }
 
   handleIncomingStream(type?: string): Promise<Request> {
@@ -89,10 +80,16 @@ class Request {
       this.payload = util.parseBoundary(type, body);
     } else if (type === 'application/x-www-form-urlencoded') {
       d('parsing form x-www-formdata');
+      d(body);
       d(querystring.parse(body));
-      const parsedForm = querystring.parse(body);
-      d(typeof parsedForm);
-      this.payload = parsedForm;
+      try {
+        this.payload = JSON.parse(body);
+      } catch (err) {
+        d('err parsing with JSON.parse');
+        const parsedForm = querystring.parse(body);
+        d(typeof parsedForm);
+        this.payload = parsedForm;
+      }
     } else {
       d('unknown header!', type);
       d('defaulting parse! keeping raw data');
