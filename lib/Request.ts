@@ -4,7 +4,6 @@ import querystring from 'querystring';
 
 import * as util from './util';
 
-
 const d = debug('relay:Request');
 
 const parseCookies = (dough: string): Object => dough
@@ -22,7 +21,7 @@ interface IRequest {
   statusCode: number | undefined;
   req: http.IncomingMessage;
   query: string | null;
-  pathname?: string; 
+  pathname?: string;
   payload?: object;
 }
 
@@ -59,7 +58,7 @@ class Request {
   handleIncomingStream(type?: string): Promise<Request> {
     return new Promise((res) => {
       let body: string = '';
-      this._req.on('data', (data) => { 
+      this._req.on('data', (data) => {
         // kill early if we're getting too much info
         if (body.length > 1e6) this._req.connection.destroy();
         body += data;
@@ -75,7 +74,7 @@ class Request {
     if (!type) return;
     if (type === 'text/plain') {
       this.payload = body;
-    } else if (type === 'application/json') {
+    } else if (type.indexOf('application/json') > -1) {
       try {
         d('parsing application/json');
         d(body);

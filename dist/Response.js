@@ -20,8 +20,9 @@ var Response = /** @class */ (function () {
     Response.prototype.getNext = function () {
         d('Returning next middleware for ', this._req.url);
         d('queue size:', this.queue.length, 'for', this._req.url);
-        if (!this.queue.length)
-            return this.send("unable to " + this._req.method + " on " + this._req.url);
+        if (!this.queue.length) {
+            return this.send("unable to " + this._req.method + " on " + this._req.url, 'text/plain', 'utf8', 404);
+        }
         var next = this.queue.shift();
         if (next)
             return next.func(this._req, this, this.getNext);
@@ -31,13 +32,14 @@ var Response = /** @class */ (function () {
      * @param payload a string of data to send
      * @param encoding encoding to use
      */
-    Response.prototype.send = function (payload, type, encoding) {
+    Response.prototype.send = function (payload, type, encoding, code) {
         var _this = this;
         if (type === void 0) { type = 'text/plain'; }
         if (encoding === void 0) { encoding = 'utf8'; }
+        if (code === void 0) { code = 200; }
         d('sending raw data', payload);
         this._res.setHeader('Content-Type', type);
-        this._res.writeHead(200, { 'Content-Type': type });
+        this._res.writeHead(code, { 'Content-Type': type });
         this._res.write(payload, encoding, function () {
             _this._res.end('\n');
             _this._req._req.connection.destroy();

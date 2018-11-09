@@ -64,7 +64,7 @@ var Request = /** @class */ (function () {
         if (type === 'text/plain') {
             this.payload = body;
         }
-        else if (type === 'application/json') {
+        else if (type.indexOf('application/json') > -1) {
             try {
                 d('parsing application/json');
                 d(body);

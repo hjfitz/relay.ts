@@ -4,6 +4,8 @@ const path = require('path');
 
 const static = path.join(process.cwd(), 'test', 'static');
 
+process.on('unhandledRejection', (r) => console.log(r))
+
 const port = 8080;
 
 const base = axios.create({ baseURL: `http://localhost:${port}` });
@@ -21,6 +23,11 @@ require('../dist').createServer({ port })
 .get('/json', (_, res) => res.json({ response: 'success' }))
 .get('/css', (_, res) => res.sendFile(path.join(static, 'style.css')))
 .get('/html', (_, res) => res.sendFile(path.join(static, 'index.html')))
+.post('/json', (req, res) => {
+  delete req._req;
+  console.log(req);
+  res.json(req.payload);
+})
 .init();
 
 describe('Basic server functions', () => {
@@ -32,11 +39,16 @@ describe('Basic server functions', () => {
     });
   });
 
-  it('should respond with a middleware not found, given that appropriate middleware is not added', (done) => {
-    base.get('/foo').then(resp => {
-      expect(resp.data).to.equal('unable to GET on /foo\n');
+  it('should respond with a middleware not found, given that appropriate middleware is not added', async (done) => {
+    let resp;
+    try {
+      resp = await base.get('/foo');
+    } catch (err) {
+      console.log(err);
+      expect(err.resp.data).to.equal('unable to GET on /foo\n');
+      
       done();
-    });
+    }
   });
 });
 
@@ -117,15 +129,28 @@ describe('server responses', () => {
     done();
   });
 
-  it('should send a status', (done) => {
-
+  it('should send a 200 status code for a found link', (done) => {
+    base.post('/').then(resp => {
+      expect(resp.status).to.equal(200);
+      done();
+    });
   });
 
+  it('should send a 404 status for a link that is not found', async (done) => {
+    let resp;
+    try {
+      resp = await base.get('/notfound');
+    } catch (err) {
+      expect(resp.status).to.equal(404);
+      done();
+    }
+  });
 });
 
 describe('request parsing', () => {
-  it('should parse application/json', (done) => {
-
+  it('should parse application/json', async (done) => {
+    const resp = await base.post('/json', { test: 'success' });
+    console.log(resp.data);
   });
 
   it('should parse x-www-form-urlencoded', (done) => {

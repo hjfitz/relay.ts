@@ -13,7 +13,7 @@ export default class Response {
      * @param payload a string of data to send
      * @param encoding encoding to use
      */
-    send(payload: string, type?: string, encoding?: string): void;
+    send(payload: string, type?: string, encoding?: string, code?: number): void;
     /**
      * read a file and send it
      * @param filename file to read
