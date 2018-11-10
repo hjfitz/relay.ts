@@ -6,13 +6,13 @@ import * as util from './util';
 
 const d = debug('relay:Request');
 
-const parseCookies = (dough: string): Object => dough
-  .split(';')
-  .map((pair: string) => {
+const parseCookies = (dough: string[]): Object => {
+  return dough.map((pair: string) => {
     const [key, ...vals]: string[] = pair.split('=');
     return { [key]: vals.join('=') };
   })
   .reduce((acc: Object, cur: { [x: string]: string; }) => Object.assign(acc, cur), {});
+};
 
 interface IRequest {
   url: string | undefined;
@@ -37,12 +37,19 @@ class Request {
 
   constructor(options: IRequest) {
     this.url = options.url || 'unknown';
-    this.headers = options.headers || '';
+    this.headers = options.headers;
     this.method = options.method || 'unknown';
     this.code = options.statusCode || 200;
     this.query = options.query;
     this._req = options.req;
-    this.cookies = parseCookies(this.headers.cookie || '');
+    if (Array.isArray(this.headers.cookie)) {
+      this.cookies = parseCookies(this.headers.cookie);
+    } else if (typeof this.headers.cookie === 'string') {
+      this.cookies = parseCookies(this.headers.cookie.split(';'));
+    } else {
+      this.cookies = {};
+    }
+
     d(`Request made to ${this.url}`);
   }
 

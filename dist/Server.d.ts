@@ -7,6 +7,7 @@ declare class Server {
     private _server;
     private middleware;
     private port;
+    private ssl;
     useSSL: Boolean;
     all: Function;
     get: Function;

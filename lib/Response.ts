@@ -39,7 +39,12 @@ export default class Response {
    * @param payload a string of data to send
    * @param encoding encoding to use
    */
-  send(payload: string, type: string = 'text/plain', encoding: string = 'utf8', code: number = 200): void {
+  send(
+    payload: string,
+    type: string = 'text/plain',
+    encoding: string = 'utf8',
+    code: number = 200,
+  ): void {
     d('sending raw data', payload);
     this._res.setHeader('Content-Type', type);
     this._res.writeHead(code, { 'Content-Type': type });

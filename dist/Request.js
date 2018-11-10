@@ -14,23 +14,31 @@ var debug_1 = __importDefault(require("debug"));
 var querystring_1 = __importDefault(require("querystring"));
 var util = __importStar(require("./util"));
 var d = debug_1.default('relay:Request');
-var parseCookies = function (dough) { return dough
-    .split(';')
-    .map(function (pair) {
-    var _a;
-    var _b = pair.split('='), key = _b[0], vals = _b.slice(1);
-    return _a = {}, _a[key] = vals.join('='), _a;
-})
-    .reduce(function (acc, cur) { return Object.assign(acc, cur); }, {}); };
+var parseCookies = function (dough) {
+    return dough.map(function (pair) {
+        var _a;
+        var _b = pair.split('='), key = _b[0], vals = _b.slice(1);
+        return _a = {}, _a[key] = vals.join('='), _a;
+    })
+        .reduce(function (acc, cur) { return Object.assign(acc, cur); }, {});
+};
 var Request = /** @class */ (function () {
     function Request(options) {
         this.url = options.url || 'unknown';
-        this.headers = options.headers || '';
+        this.headers = options.headers;
         this.method = options.method || 'unknown';
         this.code = options.statusCode || 200;
         this.query = options.query;
         this._req = options.req;
-        this.cookies = parseCookies(this.headers.cookie || '');
+        if (Array.isArray(this.headers.cookie)) {
+            this.cookies = parseCookies(this.headers.cookie);
+        }
+        else if (typeof this.headers.cookie === 'string') {
+            this.cookies = parseCookies(this.headers.cookie.split(';'));
+        }
+        else {
+            this.cookies = {};
+        }
         d("Request made to " + this.url);
     }
     Request.prototype.handleIncomingStream = function (type) {

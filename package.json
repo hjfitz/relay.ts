@@ -1,6 +1,6 @@
 {
   "name": "relay.ts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Performant webserver framework with a familiar API",
   "main": "dist/index.js",
   "repository": "https://github.com/hjfitz/relay.ts",
@@ -12,6 +12,22 @@
     "test": "mocha test/index.js",
     "test:debug": "DEBUG=relay:* yarn test"
   },
+  "keywords": [
+    "typescript server",
+    "alternative",
+    "typescript",
+    "webserver",
+    "framework",
+    "connect",
+    "express",
+    "restful",
+    "server",
+    "https",
+    "rest",
+    "http",
+    "crud",
+    "api"
+  ],
   "devDependencies": {
     "@types/debug": "^0.0.30",
     "@types/lodash": "^4.14.110",
@@ -30,7 +46,6 @@
   },
   "dependencies": {
     "debug": "^3.1.0",
-    "lodash": "^4.17.5",
     "mime-types": "^2.1.21"
   }
 }

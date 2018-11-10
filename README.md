@@ -1,8 +1,8 @@
-# TS Server
+# relay.ts
 > Serve RESTFul APIs quickly and simply
 
 ## What?
-This project is an abstraction over the builtin HTTP(s) module in Node. It aims to emulate the Express.js API, whilst being *very* performant.
+This project is an abstraction over the builtin HTTP(s) module in Node. It aims to emulate the Express.js API, whilst being *very* performant and almost entirely dependency free.
 
 Currently, this library is in very early stages and used more as a learning experience.
 

@@ -19,6 +19,7 @@ class Server {
   private _server: https.Server | http.Server;
   private middleware: any;
   private port: number;
+  private ssl: { key?: string, cert?: string };
   useSSL: Boolean;
   all: Function;
   get: Function;
@@ -119,8 +120,8 @@ class Server {
       statusCode,
       headers,
       method,
-      query: querystring.parse(query || ''),
       req,
+      query: querystring.parse(query || ''),
       url: pathname,
     });
 

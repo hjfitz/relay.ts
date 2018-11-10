@@ -96,8 +96,8 @@ var Server = /** @class */ (function () {
             statusCode: statusCode,
             headers: headers,
             method: method,
-            query: querystring_1.default.parse(query || ''),
             req: req,
+            query: querystring_1.default.parse(query || ''),
             url: pathname,
         });
         // attempt to parse incoming data

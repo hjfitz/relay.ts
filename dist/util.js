@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var debug_1 = __importDefault(require("debug"));
 var fs_1 = __importDefault(require("fs"));
 var path_1 = __importDefault(require("path"));
-var clone_1 = __importDefault(require("lodash/clone"));
 var d = debug_1.default('relay:util');
 exports.noop = function () { };
 /**
@@ -26,7 +25,7 @@ function parseBoundary(type, body) {
         d(line);
         if (line.includes(delim)) {
             if (cur.length)
-                keySplit.push(clone_1.default(cur));
+                keySplit.push(cur.slice());
             cur.length = 0;
         }
         else {

@@ -1,7 +1,6 @@
 import debug from 'debug';
 import fs from 'fs';
 import path from 'path';
-import clone from 'lodash/clone';
 
 import Request from './Request';
 import Response from './Response';
@@ -27,7 +26,7 @@ export function parseBoundary(type: string, body: string): object {
     const line: string = splitBody[i];
     d(line);
     if (line.includes(delim)) {
-      if (cur.length) keySplit.push(clone(cur));
+      if (cur.length) keySplit.push([...cur]);
       cur.length = 0;
     } else {
       if (line.length) cur.push(line);
