@@ -45,6 +45,7 @@ relay.createServer({ port })
 .get('/next3', (req, res, next) => next())
 .get('/next3', (req, res) => res.send('next3'))
 .get('/nextNone', (req, res, next) => next())
+.post('/empty', (req, res) => res.json(req.payload))
 .init();
 
 describe('Basic server functions', () => {
@@ -160,6 +161,13 @@ describe('server responses', () => {
 });
 
 describe('request parsing', () => {
+
+  it('should have an empty request payload when no data is sent', (done) => {
+    base.post('/empty').then(resp => {
+      expect(JSON.stringify(resp.data)).to.equal('{}');
+      done();
+    });
+  })
   it('should parse application/json', (done) => {
     base.post('/json', { test: 'success' }).then(resp => {
       expect(resp.data.test).to.equal('success');

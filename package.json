@@ -7,6 +7,7 @@
   "author": "Harry <hfitz83@gmail.com>",
   "license": "MIT",
   "scripts": {
+    "build": "tsc",
     "build:prod": "rm dist/* && tsc --pretty",
     "build:dev": "tsc --pretty --watch",
     "test": "mocha test/index.js",
@@ -30,7 +31,6 @@
   ],
   "devDependencies": {
     "@types/debug": "^0.0.30",
-    "@types/lodash": "^4.14.110",
     "@types/mime-types": "^2.1.0",
     "@types/node": "^9.6.1",
     "axios": "^0.18.0",
