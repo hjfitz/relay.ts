@@ -29,4 +29,6 @@ function createServer(options) {
 exports.createServer = createServer;
 var util_1 = require("./util");
 exports.useStatic = util_1.useStatic;
+var Router_1 = require("./Router");
+exports.Router = Router_1.default;
 //# sourceMappingURL=index.js.map

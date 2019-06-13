@@ -36,4 +36,5 @@ export function createServer(options: ServerOptions): Server {
   return server;
 }
 
-export { useStatic } from './util';
+export {useStatic} from './util';
+export {default as Router} from './Router'

@@ -1,3 +1,4 @@
+import Router from './Router';
 export interface Middleware {
     func: Function;
     idx: Number;
@@ -18,6 +19,7 @@ declare class Server {
     post: Function;
     put: Function;
     use: Function;
+    base: Router;
     constructor(port: number, useSSL?: boolean, cert?: string, key?: string);
     /**
    * @param cb Callback function to run when server is running
@@ -26,11 +28,5 @@ declare class Server {
     close(cb?: Function): Promise<void>;
     private listener;
     private parseRequest;
-    /**
-     * clean this the fuck up
-     */
-    private prepareMiddleware;
-    private add;
-    private addMw;
 }
 export default Server;

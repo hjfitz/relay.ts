@@ -3,7 +3,8 @@
     "extends": "tslint-config-airbnb",
     "jsRules": {},
     "rules": {
-        "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore"]
+		"variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore"],
+		"indent": [true, "tabs", 4]
     },
     "rulesDirectory": []
 }

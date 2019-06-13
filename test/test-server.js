@@ -6,7 +6,16 @@ const port = 8888;
 
 const app = relay.createServer({ port });
 
+const router = new relay.Router()
+
 app.use('/oioi', (req, res) => res.send('oi'));
+
+app.get('/router', router)
+
+router.get('/oi', (req, res) => {
+	console.log('/router/oi')
+	res.send('yas')
+})
 
 const static = path.join(__dirname, 'static');
 
