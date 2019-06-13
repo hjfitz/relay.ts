@@ -1,9 +1,11 @@
 {
-    "defaultSeverity": "error",
-    "extends": "tslint-config-airbnb",
-    "jsRules": {},
-    "rules": {
-        "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore"]
-    },
-    "rulesDirectory": []
+		"defaultSeverity": "error",
+		"extends": "tslint-config-airbnb",
+		"jsRules": {},
+		"rules": {
+		"variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore"],
+		"indent": [true, "tabs", 4],
+		"ter-indent": [true, "tab", 4]
+		},
+		"rulesDirectory": []
 }

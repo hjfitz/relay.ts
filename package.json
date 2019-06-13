@@ -11,7 +11,9 @@
     "build:prod": "rm dist/* && tsc --pretty",
     "build:dev": "tsc --pretty --watch",
     "test": "mocha test/index.js",
-    "test:debug": "DEBUG=relay:* yarn test"
+    "test:debug": "DEBUG=relay:* yarn test",
+    "test:server:fresh": "yarn build && DEBUG=relay:* node test/test-server",
+    "test:server": "DEBUG=relay:* nodemon test/test-server"
   },
   "keywords": [
     "typescript server",
@@ -37,6 +39,7 @@
     "chai": "^4.2.0",
     "form-data": "^2.3.3",
     "mocha": "^5.2.0",
+    "nodemon": "^1.19.1",
     "supertest": "^3.3.0",
     "tsc": "^1.20150623.0",
     "tslint": "^5.9.1",

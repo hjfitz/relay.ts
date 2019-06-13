@@ -6,196 +6,119 @@ import debug from 'debug';
 
 import Request from './Request';
 import Response from './Response';
+import Router from './Router'
 
 const d = debug('relay:Server');
 
 export interface Middleware {
-  func: Function;
-  idx: Number;
+	func: Function;
+	idx: Number;
 }
 
 class Server {
-  private mwCount: number;
-  private _server: https.Server | http.Server;
-  private middleware: any;
-  private port: number;
-  private ssl: { key?: string, cert?: string };
-  useSSL: Boolean;
-  all: Function;
-  get: Function;
-  head: Function;
-  patch: Function ;
-  options: Function;
-  delete: Function;
-  post: Function;
-  put: Function;
-  use: Function;
+	private mwCount: number;
+	private _server: https.Server | http.Server;
+	private middleware: any;
+	private port: number;
+	private ssl: { key?: string, cert?: string };
+	useSSL: Boolean;
+	all: Function;
+	get: Function;
+	head: Function;
+	patch: Function ;
+	options: Function;
+	delete: Function;
+	post: Function;
+	put: Function;
+	use: Function;
+	base: Router;
 
-  constructor(port: number, useSSL: boolean = false, cert?: string, key?: string) {
-    this.mwCount = 0;
-    this.listener = this.listener.bind(this);
-    this.port = port;
-    this.useSSL = useSSL;
-    // instantiate a http(s) server
-    this.ssl = { key, cert };
-    this._server = http.createServer(this.listener);
-    if (this.useSSL) this._server = https.createServer(this.ssl, this.listener);
+	constructor(port: number, useSSL: boolean = false, cert?: string, key?: string) {
+		this.mwCount = 0;
+		this.listener = this.listener.bind(this);
+		this.port = port;
+		this.useSSL = useSSL;
+		// instantiate a http(s) server
+		this.ssl = { key, cert };
+		this._server = http.createServer(this.listener);
+		if (this.useSSL) this._server = https.createServer(this.ssl, this.listener);
+	this.base = new Router();
+	this.all = this.base.add.bind(this.base, '*');
+	this.use = this.base.add.bind(this.base, '*');
+	this.get = this.base.add.bind(this.base, 'GET');
+	this.head = this.base.add.bind(this.base, 'HEAD');
+	this.patch = this.base.add.bind(this.base, 'PATCH');
+	this.options = this.base.add.bind(this.base, 'OPTIONS');
+	this.delete = this.base.add.bind(this.base, 'DELETE');
+	this.post = this.base.add.bind(this.base, 'POST');
+	this.put = this.base.add.bind(this.base, 'PUT');	
 
-    this.middleware = { GET: {}, HEAD: {}, OPTIONS: {}, POST: {}, PUT: {}, PATCH: {}, DELETE: {} };
+	}
 
-    this.all = this.add.bind(this, '*');
-    this.use = this.add.bind(this, '*');
-    this.get = this.add.bind(this, 'GET');
-    this.head = this.add.bind(this, 'HEAD');
-    this.patch = this.add.bind(this, 'PATCH');
-    this.options = this.add.bind(this, 'OPTIONS');
-    this.delete = this.add.bind(this, 'DELETE');
-    this.post = this.add.bind(this, 'POST');
-    this.put = this.add.bind(this, 'PUT');
-  }
+		/**
+	 * @param cb Callback function to run when server is running
+	 */
+	init(cb?: Function): Promise<Server> {
+		this.base.prepareMiddleware();
+		return new Promise((resolve: Function) => {
+			this._server = http.createServer(this.listener);
+			if (this.useSSL) this._server = https.createServer(this.ssl, this.listener);
+			this._server.listen(this.port, () => {
+				if (cb) cb();
+				resolve(this);
+			});
+		});
+	}
 
-    /**
-   * @param cb Callback function to run when server is running
-   */
-  init(cb?: Function): Promise<Server> {
-    this.prepareMiddleware();
-    return new Promise((resolve: Function) => {
-      this._server = http.createServer(this.listener);
-      if (this.useSSL) this._server = https.createServer(this.ssl, this.listener);
-      this._server.listen(this.port, () => {
-        if (cb) cb();
-        resolve(this);
-      });
-    });
-  }
+	close(cb?: Function): Promise<void> {
+		return new Promise((resolve: Function) => {
+			this._server.close(() => {
+				if (cb) cb();
+				resolve();
+			});
+		});
+	}
 
-  close(cb?: Function): Promise<void> {
-    return new Promise((resolve: Function) => {
-      this._server.close(() => {
-        if (cb) cb();
-        resolve();
-      });
-    });
-  }
+	private listener(req: http.IncomingMessage, res: http.ServerResponse): void {
+		d('===BEGINNING PARSE===');
+		// firstly, parse the request and response - make it a little more express-like
+		this.parseRequest(req).then((parsedReq: Request) => {
+			const { method, url } = parsedReq;
+		// default to GET if no method
+		this.base.handleReq(parsedReq, res, method, url)
+			d('===END PARSE===');
+		});
+	}
 
-  private listener(req: http.IncomingMessage, res: http.ServerResponse): void {
-    d('===BEGINNING PARSE===');
-    // firstly, parse the request and response - make it a little more express-like
-    this.parseRequest(req).then((parsedReq: Request) => {
-      const { method, url } = parsedReq;
-      // default to GET if no method
-      const mws = this.middleware[method || 'GET'];
-      const rawMws = mws[url || '*'] || mws['*'] || [];
+	// todo: add stack to req
+	private parseRequest(req: http.IncomingMessage): Promise<Request> {
+		// need to parse to METHOD & path at minimum
+		// req.on('close', () => console.log('//todo'));
 
-      // shallow clone so resp has it's own queue
-      const urlMws = [...rawMws];
+		// get what we're interested from the pure request
+		const { url, headers, method, statusCode } = req;
+		const { query, pathname } = parse(url || '');
 
-      d(`queue size for ${url}: ${urlMws.length}`);
+		d('beginning request parse');
+		// create request object
+		const parsedRequest = new Request({
+			statusCode,
+			headers,
+			method,
+			req,
+			query: querystring.parse(query || ''),
+			url: pathname,
+		});
 
-      // first funciton is used immediately
-      const curMw: Middleware = urlMws.shift();
+		// attempt to parse incoming data
+		const contentType = headers['content-type'];
+		d(`content type: ${contentType}`);
+		if (!('content-type' in headers)) return Promise.resolve(parsedRequest);
 
-      const parsedRes: Response = new Response(res, parsedReq, urlMws);
-      d('Request and Response parsed');
-
-      if (!curMw || !curMw.func) return parsedRes.getNext();
-
-      curMw.func(parsedReq, parsedRes, parsedRes.getNext);
-      d('===END PARSE===');
-    });
-  }
-
-  // todo: add stack to req
-  private parseRequest(req: http.IncomingMessage): Promise<Request> {
-    // need to parse to METHOD & path at minimum
-    // req.on('close', () => console.log('//todo'));
-
-    // get what we're interested from the pure request
-    const { url, headers, method, statusCode } = req;
-    const { query, pathname } = parse(url || '');
-
-    d('beginning request parse');
-    // create request object
-    const parsedRequest = new Request({
-      statusCode,
-      headers,
-      method,
-      req,
-      query: querystring.parse(query || ''),
-      url: pathname,
-    });
-
-    // attempt to parse incoming data
-    const contentType = headers['content-type'];
-    d(`content type: ${contentType}`);
-    if (!('content-type' in headers)) return Promise.resolve(parsedRequest);
-
-    d('parsing incoming stream...');
-    // handleIncomingStream returns itself - resolve after handling
-    return parsedRequest.handleIncomingStream(contentType);
-  }
-
-  /**
-   * clean this the fuck up
-   */
-  private prepareMiddleware(): void {
-    d('preparing midleware');
-    const all = this.middleware['*'];
-
-    // apply all '*' to each method
-    // go through each verb we currently have
-    if (all) {
-      Object.keys(this.middleware).forEach((verb: string) => {
-        if (verb === '*') return;
-        const middlewares = this.middleware[verb];
-      // go through each url on the middleware
-        Object.keys(all).forEach((url: string) => {
-          if (url in middlewares) middlewares[url].push(...all[url]);
-          else middlewares[url] = [...all[url]];
-        });
-      });
-    }
-    // d('parsed round 1', this.middleware);
-    d('verbs handled');
-
-    // append wildcards to each url
-    Object.keys(this.middleware).forEach((verb: string) => {
-      const mwStack = this.middleware[verb];
-      const wildcard = mwStack['*'];
-      Object.keys(mwStack).forEach((url: string) => {
-        if (url === '*') return;
-        let curStack = mwStack[url];
-        if (wildcard) curStack.push(...wildcard);
-        curStack = curStack.sort((mw1: Middleware, mw2: Middleware) => {
-          if (mw1.idx < mw2.idx) return -1;
-          if (mw1.idx > mw2.idx) return 1;
-          return 0;
-        });
-      });
-    });
-    d('wildcards handled');
-    d('middleware prepped');
-    Object.freeze(this.middleware);
-  }
-
-  private add(method: string, url: string|Function, middleware?: Function): Server {
-    if (typeof url === 'string' && middleware) return this.addMw(method, url, middleware);
-    if (url instanceof Function) return this.addMw(method, '*', url);
-    throw new Error('should not get here');
-  }
-
-  private addMw(method: string, url: string, middleware: Function): Server {
-    const newWare = { func: middleware, idx: this.mwCount };
-
-    if (! (method in this.middleware)) this.middleware[method] = {};
-    if (!(url in this.middleware[method])) this.middleware[method][url] = [newWare];
-    else this.middleware[method][url].push(newWare);
-
-    d(`${method} middleware for ${url} added`);
-    this.mwCount += 1;
-
-    return this;
-  }
+		d('parsing incoming stream...');
+		// handleIncomingStream returns itself - resolve after handling
+		return parsedRequest.handleIncomingStream(contentType);
+	}
 }
 
 export default Server;
