@@ -25,6 +25,6 @@ declare class Router {
  */
     prepareMiddleware(): void;
     private addMw;
-    add(method: string, url: string | Function, middleware?: Function): Router;
+    add(method: string, url: string | Function | Router, middleware?: Function): Router;
 }
 export default Router;

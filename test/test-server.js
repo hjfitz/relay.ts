@@ -6,15 +6,32 @@ const port = 8888;
 
 const app = relay.createServer({ port });
 
-const router = new relay.Router()
+const router = new relay.Router();
+
+const subsubrouter = new relay.Router();
 
 app.use('/oioi', (req, res) => res.send('oi'));
 
+app.get('/router/wee', (req, res) => {
+	res.send('tricky one')
+})
 app.get('/router', router)
+
+
 
 router.get('/oi', (req, res) => {
 	console.log('/router/oi')
 	res.send('yas')
+})
+
+subsubrouter.get('/oi', (req, res) => {
+	res.send('oioi')
+})
+
+router.use('/subrouter', subsubrouter)
+
+router.get('/router', (req, res) => {
+	res.send('router works innit')
 })
 
 const static = path.join(__dirname, 'static');

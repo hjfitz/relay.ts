@@ -22,8 +22,8 @@ declare class Server {
     base: Router;
     constructor(port: number, useSSL?: boolean, cert?: string, key?: string);
     /**
-   * @param cb Callback function to run when server is running
-   */
+ * @param cb Callback function to run when server is running
+ */
     init(cb?: Function): Promise<Server>;
     close(cb?: Function): Promise<void>;
     private listener;

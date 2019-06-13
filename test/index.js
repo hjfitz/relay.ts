@@ -20,7 +20,23 @@ base.interceptors.response.use(response => {
 
 const relay = require('../dist')
 
-relay.createServer({ port })
+const server = relay.createServer({ port });
+
+const subrouter = new relay.Router();
+const level2 = new relay.Router();
+
+
+subrouter.get('/oi', (req, res) => {
+	res.send('oi')
+})
+
+// subrouter.get(level2)
+
+// level2.get('/level2', (req, res) => {
+// 	res.send('made it to level 2')
+// })
+
+server
 .use(relay.useStatic(path.join(__dirname, 'static')))
 .get('/', (_, res) => res.sendStatus(200))
 .post('/', (_, res) => res.sendStatus(200))
@@ -29,6 +45,7 @@ relay.createServer({ port })
 .options('/', (_, res) => res.sendStatus(200))
 .patch('/', (_, res) => res.sendStatus(200))
 .delete('/', (_, res) => res.sendStatus(200))
+.get('/sub', subrouter)
 .get('/plaintext', (_, res) => res.sendFile(path.join(static, 'plain.txt')))
 .get('/plaintext2', (_, res) => res.send('oioi laddo'))
 .get('/json', (_, res) => res.json({ response: 'success' }))
@@ -45,8 +62,9 @@ relay.createServer({ port })
 .get('/next3', (req, res, next) => next())
 .get('/next3', (req, res) => res.send('next3'))
 .get('/nextNone', (req, res, next) => next())
-.post('/empty', (req, res) => res.json(req.payload))
-.init();
+.post('/empty', (req, res) => res.json(req.payload));
+
+server.init();
 
 describe('Basic server functions', () => {
   it('should run on a given port', (done) => {  
@@ -210,7 +228,7 @@ describe('request parsing', () => {
       done();
     })
   });
-})
+});
 
 describe('next()', () => {
   it('should work after one pass', (done) => {
@@ -268,3 +286,16 @@ describe('static hosting', () => {
     })
   });
 });
+
+describe('subrouters', () => {
+	it('should handle one subrouter', (done) => {
+		base.get('/sub/oi').then((data) => {
+			console.log(data)
+			done()
+		})
+	})
+
+	it('should handle nested subrouters', (done) => {
+
+	})
+})

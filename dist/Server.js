@@ -35,8 +35,8 @@ var Server = /** @class */ (function () {
         this.put = this.base.add.bind(this.base, 'PUT');
     }
     /**
-   * @param cb Callback function to run when server is running
-   */
+ * @param cb Callback function to run when server is running
+ */
     Server.prototype.init = function (cb) {
         var _this = this;
         this.base.prepareMiddleware();
